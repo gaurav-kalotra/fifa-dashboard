@@ -108,7 +108,9 @@ function MatchRow({ m, isLive, showDetails, espnInfo }) {
         {isLive && <span className="mx-live-pip" />}
         {played
           ? <span className="mx-score">{s1}–{s2}</span>
-          : <span className="mx-vs">vs</span>}
+          : isLive && espnInfo?.liveScore
+            ? <span className="mx-score mx-score-live">{espnInfo.liveScore[0]}–{espnInfo.liveScore[1]}</span>
+            : <span className="mx-vs">vs</span>}
         {showDetails && (localTime || venue) && (
           <div className="mx-match-detail">
             {localTime && <span className="mx-match-time">{localTime}</span>}
@@ -193,14 +195,21 @@ function LiveMatchTile({ event, timeline }) {
       <div className="mx-live-timeline">
         {timeline.length === 0
           ? <span className="mx-live-no-events">Waiting for events…</span>
-          : timeline.map((evt, i) => (
-            <div key={i} className={`mx-live-event ${evt.type.includes('yellow') ? 'yellow' : evt.type.includes('red') ? 'red' : 'goal'}`}>
-              <span className="mx-live-evt-min">{evt.min}'</span>
-              <span className="mx-live-evt-icon">{eventIcon(evt.type)}</span>
-              <span className="mx-live-evt-player">{evt.player || '—'}</span>
-              {evt.team && <span className="mx-live-evt-team">{evt.team}</span>}
-            </div>
-          ))
+          : timeline.map((evt, i) => {
+              const isAway = evt.team && evt.team === awayAbbr
+              const icon = eventIcon(evt.type)
+              return (
+                <div key={i} className={`mx-live-event-row ${evt.type}`}>
+                  <div className={`mx-live-evt-side home${!isAway ? ' active' : ''}`}>
+                    {!isAway && <><span className="mx-live-evt-icon">{icon}</span><span className="mx-live-evt-player">{evt.player || '—'}</span></>}
+                  </div>
+                  <span className="mx-live-evt-min">{evt.min}'</span>
+                  <div className={`mx-live-evt-side away${isAway ? ' active' : ''}`}>
+                    {isAway && <><span className="mx-live-evt-player">{evt.player || '—'}</span><span className="mx-live-evt-icon">{icon}</span></>}
+                  </div>
+                </div>
+              )
+            })
         }
       </div>
     </div>
@@ -238,6 +247,9 @@ export default function Matches({ matches }) {
             venue: comp.venue?.shortName || comp.venue?.fullName || '',
             state: ev.status?.type?.state,
             clock: ev.status?.displayClock,
+            liveScore: ev.status?.type?.state === 'in'
+              ? [parseInt(h.score ?? '0'), parseInt(a.score ?? '0')]
+              : null,
           }
         }
         setEspnMap(map)
