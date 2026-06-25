@@ -6,7 +6,7 @@ function roundNum(r) {
   return m ? +m[0] : 999
 }
 
-function MatchRow({ m, liveNums }) {
+function MatchRow({ m, isLive }) {
   const ft = m.score?.ft
   const [s1, s2] = ft || []
   const played = !!ft
@@ -14,94 +14,99 @@ function MatchRow({ m, liveNums }) {
   const win2 = played && s2 > s1
   const url1 = flagUrl(m.team1)
   const url2 = flagUrl(m.team2)
-  const isLive = liveNums.has(m.num ?? `${m.team1}-${m.team2}`)
 
   return (
     <div className={`mx-row${played ? ' played' : ''}${isLive ? ' live' : ''}`}>
-      {url1 ? <img src={url1} alt={ab(m.team1)} className="mx-flag" onError={e => e.target.style.display='none'} />
-             : <span className="mx-abbr-only">{ab(m.team1)}</span>}
-      <span className={`mx-team left${win1 ? ' win' : ''}`}>{ab(m.team1)}</span>
-      <span className="mx-score-cell">
-        {isLive && <span className="mx-live-dot" />}
+      <div className="mx-team-cell left">
+        {url1
+          ? <img src={url1} alt={ab(m.team1)} className="mx-flag" onError={e => { e.target.style.display = 'none' }} />
+          : null}
+        <span className={`mx-name${win1 ? ' win' : ''}`}>{ab(m.team1)}</span>
+      </div>
+
+      <div className="mx-center">
+        {isLive && <span className="mx-live-pip" />}
         {played
           ? <span className="mx-score">{s1}–{s2}</span>
           : <span className="mx-vs">vs</span>}
-      </span>
-      <span className={`mx-team right${win2 ? ' win' : ''}`}>{ab(m.team2)}</span>
-      {url2 ? <img src={url2} alt={ab(m.team2)} className="mx-flag right" onError={e => e.target.style.display='none'} />
-             : <span className="mx-abbr-only">{ab(m.team2)}</span>}
-      {played && (
-        <span className={`mx-result${win1 ? ' w1' : win2 ? ' w2' : ' draw'}`}>
-          {win1 ? 'W' : win2 ? 'W' : 'D'}
-        </span>
-      )}
+      </div>
+
+      <div className="mx-team-cell right">
+        <span className={`mx-name${win2 ? ' win' : ''}`}>{ab(m.team2)}</span>
+        {url2
+          ? <img src={url2} alt={ab(m.team2)} className="mx-flag" onError={e => { e.target.style.display = 'none' }} />
+          : null}
+      </div>
+    </div>
+  )
+}
+
+function RoundBlock({ roundName, ms, liveNums, highlight }) {
+  const played = ms.filter(m => m.score?.ft).length
+  const total = ms.length
+  return (
+    <div className={`mx-block${highlight ? ' current' : ''}`}>
+      <div className="mx-block-hdr">
+        <span className="mx-rnd-name">{roundName}</span>
+        <span className="mx-rnd-progress">{played}/{total}</span>
+      </div>
+      <div className="mx-block-matches">
+        {ms.map((m, i) => (
+          <MatchRow key={i} m={m} isLive={liveNums.has(m.num ?? `${m.team1}-${m.team2}`)} />
+        ))}
+      </div>
     </div>
   )
 }
 
 export default function Matches({ matches }) {
-  const { currentRounds, upcomingRounds, recentRounds } = useMemo(() => {
-    const groupMatches = matches.filter(m => m.group)
+  const { rounds, activeIdx } = useMemo(() => {
     const byRound = {}
-    for (const m of groupMatches) {
+    for (const m of matches.filter(m => m.group)) {
       if (!byRound[m.round]) byRound[m.round] = []
       byRound[m.round].push(m)
     }
-
-    const rounds = Object.entries(byRound)
-      .sort((a, b) => roundNum(a[0]) - roundNum(b[0]))
-
-    // Find the boundary: first round with any unplayed match
+    const rounds = Object.entries(byRound).sort((a, b) => roundNum(a[0]) - roundNum(b[0]))
     let activeIdx = rounds.findIndex(([, ms]) => ms.some(m => !m.score?.ft))
     if (activeIdx < 0) activeIdx = rounds.length - 1
-
-    // currentRounds: one round before + active round (partially played or upcoming)
-    const currentRounds = rounds.slice(Math.max(0, activeIdx - 1), activeIdx + 1)
-    const upcomingRounds = rounds.slice(activeIdx + 1, activeIdx + 3)
-    const recentRounds = activeIdx > 1 ? rounds.slice(Math.max(0, activeIdx - 3), activeIdx - 1) : []
-
-    return { currentRounds, upcomingRounds, recentRounds }
+    return { rounds, activeIdx }
   }, [matches])
 
-  // For live detection: mark matches in the most recent partial round as potentially live
+  // Mark potentially live: unplayed matches in a partially-played active round
   const liveNums = useMemo(() => {
     const s = new Set()
-    if (currentRounds.length > 0) {
-      const latest = currentRounds[currentRounds.length - 1][1]
-      const hasAnyResult = latest.some(m => m.score?.ft)
-      const hasAnyUpcoming = latest.some(m => !m.score?.ft)
-      if (hasAnyResult && hasAnyUpcoming) {
-        // Partially played round: unplayed matches may be live
-        for (const m of latest) {
-          if (!m.score?.ft) s.add(m.num ?? `${m.team1}-${m.team2}`)
-        }
-      }
+    const [, ms] = rounds[activeIdx] || [, []]
+    if (ms.some(m => m.score?.ft) && ms.some(m => !m.score?.ft)) {
+      for (const m of ms) if (!m.score?.ft) s.add(m.num ?? `${m.team1}-${m.team2}`)
     }
     return s
-  }, [currentRounds])
+  }, [rounds, activeIdx])
 
-  function RoundSection({ label, rounds, dim }) {
-    if (!rounds.length) return null
-    return (
-      <div className={`mx-section${dim ? ' dim' : ''}`}>
-        <div className="mx-section-label">{label}</div>
-        <div className="mx-rounds-grid">
-          {rounds.map(([roundName, ms]) => (
-            <div key={roundName} className="mx-round-block">
-              <div className="mx-round-header">{roundName}</div>
-              {ms.map((m, i) => <MatchRow key={i} m={m} liveNums={liveNums} />)}
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  // Chronological display: active round first, ±2 rounds around it, then older ones dimmed
+  const visible = useMemo(() => {
+    const out = []
+    // Show 1 round before active (just-completed), active, 2 rounds after
+    const start = Math.max(0, activeIdx - 1)
+    const end = Math.min(rounds.length - 1, activeIdx + 2)
+    for (let i = start; i <= end; i++) {
+      out.push({ round: rounds[i], idx: i, dim: i < activeIdx - 1 })
+    }
+    return out
+  }, [rounds, activeIdx])
 
   return (
-    <div className="mx-layout">
-      <RoundSection label="● CURRENT" rounds={currentRounds} />
-      <RoundSection label="UPCOMING" rounds={upcomingRounds} />
-      <RoundSection label="RECENT" rounds={recentRounds} dim />
+    <div className="mx-outer">
+      <div className="mx-inner">
+        {visible.map(({ round: [name, ms], idx, dim }) => (
+          <RoundBlock
+            key={name}
+            roundName={name}
+            ms={ms}
+            liveNums={liveNums}
+            highlight={idx === activeIdx}
+          />
+        ))}
+      </div>
     </div>
   )
 }

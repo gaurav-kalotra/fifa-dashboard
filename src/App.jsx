@@ -6,6 +6,7 @@ import Games from './components/Games'
 import Standings from './components/Standings'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
+import Background from './components/Background'
 import Ticker from './components/Ticker'
 import './index.css'
 
@@ -97,6 +98,7 @@ export default function App() {
   if (isTV) {
     return (
       <div className="tv-frame">
+        <Background />
         <Stars />
         <div className="orb orb-1" />
         <div className="orb orb-2" />
@@ -130,7 +132,7 @@ export default function App() {
           {tab === 'schedule' && <Schedule groups={groups} matches={matches} />}
         </div>
 
-        <Ticker matches={matches} />
+        <Ticker matches={matches} groups={groups} />
       </div>
     )
   }
