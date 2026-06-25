@@ -26,20 +26,52 @@ function eventIcon(type = '') {
 }
 
 function parseTimeline(summary) {
-  const items = summary?.plays || summary?.keyEvents || []
+  // ESPN uses different field names across endpoints — try all of them
+  const seen = new Set()
+  const items = [
+    ...(summary?.plays || []),
+    ...(summary?.keyEvents || []),
+    ...(summary?.scoringPlays || []),
+    ...(summary?.keyPlays || []),
+  ].filter(p => { const k = p.id ?? JSON.stringify(p); return seen.has(k) ? false : (seen.add(k), true) })
+
   const out = []
   for (const p of items) {
-    const typeRaw = (p.type?.id || p.type?.text || '').toLowerCase()
-    if (!typeRaw.includes('goal') && !typeRaw.includes('card') && !typeRaw.includes('pen')) continue
-    const minRaw = p.clock?.value ?? p.clock?.displayValue ?? ''
-    const player = p.participants?.find(x =>
-      x.type?.id === 'scorer' || !x.type?.id
-    )?.athlete?.displayName || p.athlete?.displayName || ''
+    const typeId   = String(p.type?.id   || '').toLowerCase()
+    const typeText = String(p.type?.text || p.type?.name || '').toLowerCase()
+    // ESPN soccer type IDs: 70=goal, 72=penalty goal, 93=yellow, 94=red, 95=double-yellow
+    const isGoal = typeText.includes('goal') || typeId === '70' || typeId === '72' || typeText === 'score'
+    const isCard = typeText.includes('yellow') || typeText.includes('red') || ['93','94','95'].includes(typeId)
+    const isPen  = typeText.includes('pen') || typeId === '72'
+    if (!isGoal && !isCard && !isPen) continue
+
+    // Prefer displayValue ("23:00") over raw seconds value
+    const dispVal = p.clock?.displayValue
+    const secVal  = p.clock?.value
+    let min = ''
+    if (dispVal) {
+      min = String(parseInt(dispVal) || dispVal.split(':')[0] || '')
+    } else if (typeof secVal === 'number') {
+      min = String(Math.floor(secVal / 60))
+    }
+
+    // Try multiple participant paths, then fall back to parsing p.text
+    const scorer = p.participants?.find(x =>
+      (x.type?.id === 'scorer' || x.type?.id === '1' ||
+       (x.type?.text || '').toLowerCase().includes('scorer'))
+    )
+    const player =
+      scorer?.athlete?.displayName
+      || p.participants?.[0]?.athlete?.displayName
+      || p.athlete?.displayName
+      || (p.text || '').match(/[-–]\s*([^(,\n]+?)(?:\s*[\(,]|$)/)?.[1]?.trim()
+      || ''
+
     out.push({
-      min: typeof minRaw === 'number' ? Math.floor(minRaw) : parseInt(minRaw) || minRaw,
-      type: typeRaw,
+      min,
+      type: isGoal ? 'goal' : isCard ? (typeText.includes('red') ? 'red' : 'yellow') : 'pen',
       player,
-      team: p.team?.abbreviation || '',
+      team: p.team?.abbreviation || p.team?.shortDisplayName || '',
     })
   }
   return out.sort((a, b) => (parseInt(a.min) || 0) - (parseInt(b.min) || 0))
