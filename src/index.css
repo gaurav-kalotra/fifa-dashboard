@@ -743,7 +743,7 @@ body.tv-mode { overflow: hidden; }
 
 /* Content */
 .tv-content {
-  flex:1; overflow:hidden; padding-top:1.2vh;
+  flex:1; overflow:hidden; padding-top:1.2vh; padding-bottom:1.2vh;
   position:relative; z-index:1;
   animation:tv-fade-in .75s cubic-bezier(.22,1,.36,1) both;
 }
