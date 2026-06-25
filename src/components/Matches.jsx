@@ -134,7 +134,6 @@ function LiveMatchTile({ event, timeline }) {
       <div className="mx-live-hdr">
         <span className="mx-live-badge"><span className="mx-live-dot" />LIVE</span>
         <span className="mx-live-group">{event.shortName || ''}</span>
-        <span className="mx-live-clock">{clock}</span>
         {venue && <span className="mx-live-venue">{venue}</span>}
       </div>
 
@@ -146,7 +145,10 @@ function LiveMatchTile({ event, timeline }) {
         </div>
         <div className="mx-live-goals">
           <span className={`mx-live-num${homeScore > awayScore ? ' lead' : ''}`}>{homeScore}</span>
-          <span className="mx-live-dash">—</span>
+          <div className="mx-live-center">
+            <span className="mx-live-clock">{clock}</span>
+            <span className="mx-live-dash">—</span>
+          </div>
           <span className={`mx-live-num${awayScore > homeScore ? ' lead' : ''}`}>{awayScore}</span>
         </div>
         <div className="mx-live-team right">
