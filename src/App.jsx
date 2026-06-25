@@ -76,16 +76,17 @@ export default function App() {
           <span className="tv-title">FIFA World Cup 2026</span>
           <div className="tv-tabs">
             {TV_TABS.map((t) => (
-              <span key={t} className={`tv-tab-dot${tab === t ? ' active' : ''}`} />
+              <span key={t} className={`tv-tab-dot${tab === t ? ' active' : ''}`} title={t} />
             ))}
           </div>
           <div className={`status-dot status-${dataStatus}`} />
         </div>
-        <div className="tv-content">
+        <div className="tv-content" key={tab}>
           {tab === 'games' && <Games matches={matches} />}
           {tab === 'standings' && <Standings groups={groups} />}
           {tab === 'bracket' && <Bracket matches={matches} groups={groups} />}
         </div>
+        <div className="tv-progress" />
       </div>
     )
   }
