@@ -59,7 +59,7 @@ export default function App() {
       }
     }
     load()
-    const interval = setInterval(load, 10 * 60 * 1000)
+    const interval = setInterval(load, 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 

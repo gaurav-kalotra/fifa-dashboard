@@ -230,7 +230,7 @@ export default function Matches({ matches }) {
     }
 
     load()
-    const iv = setInterval(load, 60_000)
+    const iv = setInterval(load, 10_000)
     return () => clearInterval(iv)
   }, [])
 
