@@ -25,7 +25,7 @@ function eventIcon(type = '') {
   return '•'
 }
 
-function parseTimeline(summary) {
+function parseTimeline(summary, homeTeamId, awayTeamId) {
   // ESPN uses different field names across endpoints — try all of them
   const seen = new Set()
   const items = [
@@ -67,11 +67,17 @@ function parseTimeline(summary) {
       || (p.text || '').match(/[-–]\s*([^(,\n]+?)(?:\s*[\(,]|$)/)?.[1]?.trim()
       || ''
 
+    // Match team by ID (most reliable) then fall back to abbreviation
+    const teamId = String(p.team?.id || '')
+    const side = homeTeamId && teamId === String(homeTeamId) ? 'home'
+               : awayTeamId && teamId === String(awayTeamId) ? 'away'
+               : ''
+
     out.push({
       min,
       type: isGoal ? 'goal' : isCard ? (typeText.includes('red') ? 'red' : 'yellow') : 'pen',
       player,
-      team: p.team?.abbreviation || p.team?.shortDisplayName || '',
+      side,
     })
   }
   return out.sort((a, b) => (parseInt(a.min) || 0) - (parseInt(b.min) || 0))
@@ -196,7 +202,7 @@ function LiveMatchTile({ event, timeline }) {
         {timeline.length === 0
           ? <span className="mx-live-no-events">Waiting for events…</span>
           : timeline.map((evt, i) => {
-              const isAway = evt.team && evt.team === awayAbbr
+              const isAway = evt.side === 'away'
               const icon = eventIcon(evt.type)
               return (
                 <div key={i} className={`mx-live-event-row ${evt.type}`}>
@@ -263,9 +269,12 @@ export default function Matches({ matches }) {
           const newTimelines = {}
           await Promise.all(live.map(async ev => {
             try {
+              const comp = ev.competitions?.[0]
+              const homeComp = comp?.competitors?.find(c => c.homeAway === 'home')
+              const awayComp = comp?.competitors?.find(c => c.homeAway === 'away')
               const r2 = await fetch(ESPN_SUMMARY(ev.id))
               const d2 = await r2.json()
-              newTimelines[ev.id] = parseTimeline(d2)
+              newTimelines[ev.id] = parseTimeline(d2, homeComp?.team?.id, awayComp?.team?.id)
             } catch { newTimelines[ev.id] = [] }
           }))
           setTimelines(newTimelines)
