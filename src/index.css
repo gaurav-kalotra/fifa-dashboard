@@ -1125,12 +1125,12 @@ body.tv-mode { overflow: hidden; }
   font-family:'Oswald',system-ui,sans-serif; font-size:1.8vh; font-weight:700;
   color:rgba(255,255,255,.92); letter-spacing:.08em; text-transform:uppercase; flex-shrink:0;
 }
-.sch-groups-col { flex:1; display:flex; flex-direction:column; gap:.5vh; overflow:hidden; }
+.sch-groups-col { flex:1; display:flex; flex-direction:column; gap:.35vh; overflow:hidden; }
 .sch-group {
   background:rgba(255,255,255,.055);
   border:1px solid rgba(255,255,255,.1);
   border-left:3px solid rgba(251,191,36,.5);
-  border-radius:4px; overflow:hidden; flex-shrink:0;
+  border-radius:4px; overflow:hidden; flex:1; min-height:0;
 }
 .sch-group-hdr {
   padding:.35vh .6vw; background:rgba(251,191,36,.07);
@@ -1139,8 +1139,8 @@ body.tv-mode { overflow: hidden; }
   color:#fbbf24; letter-spacing:.06em;
 }
 .sch-tbl { width:100%; border-collapse:collapse; font-size:1.2vh; font-family:'Inter',system-ui,sans-serif; }
-.sch-tbl th { font-size:1.05vh; color:rgba(255,255,255,.42); font-weight:600; text-align:center; padding:.28vh .3vw; }
-.sch-tbl td { color:rgba(247,245,240,.84); text-align:center; padding:.28vh .3vw; border-top:1px solid rgba(255,255,255,.04); }
+.sch-tbl th { font-size:1.05vh; color:rgba(255,255,255,.42); font-weight:600; text-align:center; padding:.22vh .3vw; }
+.sch-tbl td { color:rgba(247,245,240,.84); text-align:center; padding:.22vh .3vw; border-top:1px solid rgba(255,255,255,.04); }
 .sch-th-team { width:38%; text-align:left; }
 .sch-th-pts { color:rgba(255,255,255,.62) !important; }
 .sch-td-team { text-align:left; display:flex; align-items:center; gap:.3vw; padding-left:.4vw; }
