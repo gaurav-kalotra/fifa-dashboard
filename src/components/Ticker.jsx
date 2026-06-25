@@ -56,15 +56,7 @@ export default function Ticker({ matches, groups }) {
 
   const items = useMemo(() => {
     const out = []
-
-    // Recent results (last 12)
-    const results = matches.filter(m => m.score?.ft).slice(-12)
-    for (const m of results) {
-      const [s1, s2] = m.score.ft
-      const ctx = m.group?.replace('Group ', 'GRP ')
-        || (m.round || '').replace('Round of ', 'R').replace('Quarter-final', 'QF').replace('Semi-final', 'SF')
-      out.push({ icon: '⚽', ctx, text: `${ab(m.team1)} ${s1}–${s2} ${ab(m.team2)}`, type: 'result' })
-    }
+    const played = matches.filter(m => m.score?.ft)
 
     // Upcoming (next 6 group matches)
     const upcoming = matches.filter(m => !m.score?.ft && m.group).slice(0, 6)
@@ -102,7 +94,6 @@ export default function Ticker({ matches, groups }) {
     }
 
     // Biggest win
-    const played = matches.filter(m => m.score?.ft)
     if (played.length) {
       const big = [...played].sort((a, b) => {
         const da = Math.abs(a.score.ft[0] - a.score.ft[1])
@@ -116,11 +107,17 @@ export default function Ticker({ matches, groups }) {
       }
     }
 
-    // Rotate static facts based on played match count for variety
+    // Static facts (rotated for variety)
     const shift = played.length % FACTS.length
     out.push(...FACTS.slice(shift), ...FACTS.slice(0, shift))
 
-    return out
+    // Deterministic shuffle keyed to played count so order changes as tournament progresses
+    const seed = played.length
+    return out.sort((a, b) => {
+      const ha = Math.sin(seed + out.indexOf(a) * 7.3) * 10000
+      const hb = Math.sin(seed + out.indexOf(b) * 7.3) * 10000
+      return (ha - Math.floor(ha)) - (hb - Math.floor(hb))
+    })
   }, [matches, groups, espnScorers])
 
   if (!items.length) return null
