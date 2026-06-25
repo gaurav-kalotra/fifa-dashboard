@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { ab } from '../utils'
 
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
@@ -36,9 +36,6 @@ function shuffle(arr, seed) {
 
 export default function Ticker({ matches, groups }) {
   const [espnScorers, setEspnScorers] = useState([])
-  const [idx, setIdx]   = useState(0)
-  const [show, setShow] = useState(true)
-  const timer = useRef(null)
 
   useEffect(() => {
     const load = async () => {
@@ -70,17 +67,14 @@ export default function Ticker({ matches, groups }) {
     const out = []
     const played = matches.filter(m => m.score?.ft)
 
-    // Upcoming (next 6 group matches)
     matches.filter(m => !m.score?.ft && m.group).slice(0, 6).forEach(m => {
       out.push({ icon: '🗓️', ctx: m.group?.replace('Group ','GRP ') || '', text: `${ab(m.team1)} vs ${ab(m.team2)}`, type: 'upcoming' })
     })
 
-    // Golden Boot
     espnScorers.forEach(s => {
       out.push({ icon: '🥅', ctx: 'GOLDEN BOOT', text: `${s.name} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`, type: 'stat' })
     })
 
-    // Qualification / elimination
     for (const [g, entries] of Object.entries(groups || {})) {
       if (!entries?.length) continue
       if (entries[1]?.pts >= 6)
@@ -90,7 +84,6 @@ export default function Ticker({ matches, groups }) {
       )
     }
 
-    // Tournament stats
     const all = Object.values(groups || {}).flat()
     if (all.length) {
       const top = [...all].sort((a, b) => b.gf - a.gf)[0]
@@ -101,7 +94,6 @@ export default function Ticker({ matches, groups }) {
         out.push({ icon: '🛡️', ctx: 'DEFENSE', text: `${ab(def.t)} – ${def.p} games, zero goals conceded`, type: 'stat' })
     }
 
-    // Biggest win
     if (played.length) {
       const big = [...played].sort((a, b) =>
         Math.abs(b.score.ft[0]-b.score.ft[1]) - Math.abs(a.score.ft[0]-a.score.ft[1])
@@ -113,29 +105,17 @@ export default function Ticker({ matches, groups }) {
       }
     }
 
-    // Static facts (rotated then shuffled)
     const shift = played.length % FACTS.length
     out.push(...FACTS.slice(shift), ...FACTS.slice(0, shift))
 
     return shuffle(out, played.length)
   }, [matches, groups, espnScorers])
 
-  // Fade cycle: show 6s, fade out 0.6s, switch, fade in
-  useEffect(() => {
-    if (!items.length) return
-    const cycle = () => {
-      setShow(false)
-      timer.current = setTimeout(() => {
-        setIdx(i => (i + 1) % items.length)
-        setShow(true)
-      }, 650)
-    }
-    const iv = setInterval(cycle, 7000)
-    return () => { clearInterval(iv); clearTimeout(timer.current) }
-  }, [items.length])
-
   if (!items.length) return null
-  const item = items[idx] || items[0]
+
+  // ~14s per item so each passes slowly enough to read comfortably
+  const duration = Math.max(240, items.length * 14)
+  const doubled = [...items, ...items]
 
   return (
     <div className="ticker">
@@ -143,15 +123,21 @@ export default function Ticker({ matches, groups }) {
         <span className="ticker-icon">⚽</span>
         <span>WC2026</span>
       </div>
-      <div className="ticker-stage">
-        <div className={`ticker-item-fade${show ? ' show' : ''} ${item.type}`}>
-          <span className="ticker-item-icon">{item.icon}</span>
-          <span className="ticker-ctx">{item.ctx}</span>
-          <span className="ticker-text">{item.text}</span>
+      <div className="ticker-track">
+        <div
+          className="ticker-scroll"
+          key={`tk-${items.length}`}
+          style={{ animationDuration: `${duration}s` }}
+        >
+          {doubled.map((item, i) => (
+            <span key={i} className={`ticker-item ${item.type}`}>
+              <span className="ticker-item-icon">{item.icon}</span>
+              <span className="ticker-ctx">{item.ctx}</span>
+              {item.text}
+              <span className="ticker-sep">◆</span>
+            </span>
+          ))}
         </div>
-      </div>
-      <div className="ticker-counter">
-        {idx + 1} / {items.length}
       </div>
     </div>
   )
