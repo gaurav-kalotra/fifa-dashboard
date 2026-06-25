@@ -106,14 +106,7 @@ export default function App() {
 
         <div className="tv-header">
           <div className="tv-title-block">
-            <div className="tv-wc-logo">
-              <div className="tv-wc-emblems">
-                <div className="tv-wc-flame red" />
-                <div className="tv-wc-flame wht" />
-                <div className="tv-wc-flame blue" />
-              </div>
-              <div className="tv-wc-wordmark">FIFA WC 2026</div>
-            </div>
+            <span className="tv-trophy">🏆</span>
             <div>
               <div className="tv-title">FIFA World Cup 2026</div>
               <div className="tv-subtitle">United States · Canada · Mexico</div>

@@ -114,7 +114,7 @@ export default function Ticker({ matches, groups }) {
   if (!items.length) return null
 
   // ~14s per item so each passes slowly enough to read comfortably
-  const duration = Math.max(240, items.length * 14)
+  const duration = Math.max(360, items.length * 22)
   const doubled = [...items, ...items]
 
   return (
