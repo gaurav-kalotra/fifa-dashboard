@@ -1,0 +1,16 @@
+[Unit]
+Description=FIFA World Cup 2026 Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/claude-projects/fifa-dashboard
+ExecStartPre=/usr/bin/npm run build
+ExecStart=/usr/bin/npm run preview
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
