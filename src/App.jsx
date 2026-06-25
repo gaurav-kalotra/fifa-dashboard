@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { computeGroups } from './utils'
 import SNAPSHOT from './data/snapshot'
+import Matches from './components/Matches'
 import Games from './components/Games'
 import Standings from './components/Standings'
 import Bracket from './components/Bracket'
-import GroupsBracket from './components/GroupsBracket'
+import Schedule from './components/Schedule'
 import Ticker from './components/Ticker'
 import './index.css'
 
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
-const TV_TABS = ['games', 'groups-bracket']
+const TV_TABS = ['matches', 'schedule']
 const TV_INTERVAL_MS = 30_000
 
 const isTV = new URLSearchParams(window.location.search).get('tv') === '1'
@@ -40,7 +41,7 @@ function Stars() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState('games')
+  const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
   const [matches, setMatches] = useState(SNAPSHOT.matches)
   const [dataStatus, setDataStatus] = useState('snapshot')
   const cursorTimer = useRef(null)
@@ -112,7 +113,7 @@ export default function App() {
           <div className="tv-tabs-indicator">
             {TV_TABS.map(t => (
               <span key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}>
-                {t === 'games' ? 'MATCHES' : 'GROUPS & BRACKET'}
+                {t === 'matches' ? 'MATCHES' : 'SCHEDULE'}
               </span>
             ))}
           </div>
@@ -125,8 +126,8 @@ export default function App() {
         <div className="tv-progress" key={tab} />
 
         <div className="tv-content" key={`c-${tab}`}>
-          {tab === 'games' && <Games matches={matches} />}
-          {tab === 'groups-bracket' && <GroupsBracket groups={groups} matches={matches} />}
+          {tab === 'matches' && <Matches matches={matches} />}
+          {tab === 'schedule' && <Schedule groups={groups} matches={matches} />}
         </div>
 
         <Ticker matches={matches} />
