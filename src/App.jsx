@@ -4,13 +4,40 @@ import SNAPSHOT from './data/snapshot'
 import Games from './components/Games'
 import Standings from './components/Standings'
 import Bracket from './components/Bracket'
+import GroupsBracket from './components/GroupsBracket'
+import Ticker from './components/Ticker'
 import './index.css'
 
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
-const TV_TABS = ['games', 'standings', 'bracket']
-const TV_INTERVAL_MS = 25_000
+const TV_TABS = ['games', 'groups-bracket']
+const TV_INTERVAL_MS = 30_000
 
 const isTV = new URLSearchParams(window.location.search).get('tv') === '1'
+
+// Deterministic star positions (no random so render is stable)
+const STARS = Array.from({ length: 60 }, (_, i) => ({
+  x: (i * 37.3 + 11.7) % 100,
+  y: (i * 61.7 + 3.2) % 100,
+  size: 1 + (i % 3) * 0.5,
+  dur: 2.5 + (i % 6) * 0.6,
+  delay: (i * 0.37) % 7,
+  op: 0.12 + (i % 5) * 0.07,
+}))
+
+function Stars() {
+  return (
+    <div className="stars-layer" aria-hidden="true">
+      {STARS.map((s, i) => (
+        <span key={i} className="star" style={{
+          left: `${s.x}%`, top: `${s.y}%`,
+          width: `${s.size}px`, height: `${s.size}px`,
+          animationDuration: `${s.dur}s`, animationDelay: `${s.delay}s`,
+          opacity: s.op,
+        }} />
+      ))}
+    </div>
+  )
+}
 
 export default function App() {
   const [tab, setTab] = useState('games')
@@ -18,7 +45,6 @@ export default function App() {
   const [dataStatus, setDataStatus] = useState('snapshot')
   const cursorTimer = useRef(null)
 
-  // data fetch
   useEffect(() => {
     const load = async () => {
       try {
@@ -28,7 +54,7 @@ export default function App() {
         setMatches(data.matches || [])
         setDataStatus('live')
       } catch {
-        setDataStatus((s) => (s === 'live' ? 'stale' : 'error'))
+        setDataStatus(s => s === 'live' ? 'stale' : 'error')
       }
     }
     load()
@@ -36,33 +62,31 @@ export default function App() {
     return () => clearInterval(interval)
   }, [])
 
-  // TV: auto-rotate tabs + hide cursor
   useEffect(() => {
     if (!isTV) return
     document.body.classList.add('tv-mode')
 
-    const rotateTabs = setInterval(() => {
-      setTab((t) => {
+    const rotate = setInterval(() => {
+      setTab(t => {
         const idx = TV_TABS.indexOf(t)
         return TV_TABS[(idx + 1) % TV_TABS.length]
       })
     }, TV_INTERVAL_MS)
 
-    const hideCursor = () => {
+    const hide = () => {
       document.body.style.cursor = 'none'
       clearTimeout(cursorTimer.current)
     }
-    const showCursor = () => {
+    const show = () => {
       document.body.style.cursor = ''
       clearTimeout(cursorTimer.current)
-      cursorTimer.current = setTimeout(hideCursor, 3000)
+      cursorTimer.current = setTimeout(hide, 3000)
     }
-    hideCursor()
-    document.addEventListener('mousemove', showCursor)
-
+    hide()
+    document.addEventListener('mousemove', show)
     return () => {
-      clearInterval(rotateTabs)
-      document.removeEventListener('mousemove', showCursor)
+      clearInterval(rotate)
+      document.removeEventListener('mousemove', show)
       document.body.classList.remove('tv-mode')
     }
   }, [])
@@ -72,25 +96,46 @@ export default function App() {
   if (isTV) {
     return (
       <div className="tv-frame">
+        <Stars />
+        <div className="orb orb-1" />
+        <div className="orb orb-2" />
+        <div className="orb orb-3" />
+
         <div className="tv-header">
-          <span className="tv-title">FIFA World Cup 2026</span>
-          <div className="tv-tabs">
-            {TV_TABS.map((t) => (
-              <span key={t} className={`tv-tab-dot${tab === t ? ' active' : ''}`} title={t} />
+          <div className="tv-title-block">
+            <span className="tv-trophy">🏆</span>
+            <div>
+              <div className="tv-title">FIFA World Cup 2026</div>
+              <div className="tv-subtitle">United States · Canada · Mexico</div>
+            </div>
+          </div>
+          <div className="tv-tabs-indicator">
+            {TV_TABS.map(t => (
+              <span key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}>
+                {t === 'games' ? 'MATCHES' : 'GROUPS & BRACKET'}
+              </span>
             ))}
           </div>
-          <div className={`status-dot status-${dataStatus}`} />
+          <div className={`tv-status-badge status-${dataStatus}`}>
+            <span className="tv-status-dot" />
+            {dataStatus === 'live' ? 'LIVE' : dataStatus === 'snapshot' ? 'DATA' : 'CACHED'}
+          </div>
         </div>
-        <div className="tv-content" key={tab}>
+
+        <div className="tv-progress" key={tab} />
+
+        <div className="tv-content" key={`c-${tab}`}>
           {tab === 'games' && <Games matches={matches} />}
-          {tab === 'standings' && <Standings groups={groups} />}
-          {tab === 'bracket' && <Bracket matches={matches} groups={groups} />}
+          {tab === 'groups-bracket' && <GroupsBracket groups={groups} matches={matches} />}
         </div>
-        <div className="tv-progress" />
+
+        <Ticker matches={matches} />
       </div>
     )
   }
 
+  // Regular (non-TV) mode
+  const ALL_TABS = ['games', 'standings', 'bracket']
   return (
     <div className="app">
       <header className="header">
@@ -103,7 +148,7 @@ export default function App() {
             </div>
           </div>
           <nav className="tabs">
-            {TV_TABS.map((t) => (
+            {ALL_TABS.map(t => (
               <button key={t} className={`tab${tab === t ? ' active' : ''}`} onClick={() => setTab(t)}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
