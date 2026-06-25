@@ -436,9 +436,33 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
-.game-team { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.game-team.right { text-align: right; }
-.game-team.gw { color: var(--green); font-weight: 700; }
+.game-team {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+.game-team.right { flex-direction: row-reverse; }
+.game-team.gw .game-abbr { color: var(--green); font-weight: 700; }
+.game-flag {
+  width: 22px;
+  height: 15px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.game-abbr {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.game-abbr-only {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
 .game-score {
   font-size: 14px;
   font-weight: 700;
@@ -512,6 +536,14 @@ body {
 .bk-team.bk-winner { background: rgba(0,176,79,0.08); }
 .bk-team.bk-winner .bk-name { color: var(--text); font-weight: 600; }
 .bk-team.bk-tbd .bk-name { color: var(--muted); font-style: italic; }
+.bk-flag {
+  width: 24px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.08);
+}
 .bk-abbr {
   font-size: 10px;
   font-weight: 700;

@@ -1,6 +1,19 @@
-import { ab } from '../utils'
+import { ab, flagUrl } from '../utils'
 
 const GROUP_ORDER = 'ABCDEFGHIJKL'.split('')
+
+function Flag({ name, flip }) {
+  const url = flagUrl(name)
+  if (!url) return <span className="game-abbr-only">{ab(name)}</span>
+  return (
+    <img
+      src={url}
+      alt={ab(name)}
+      className={`game-flag${flip ? ' flip' : ''}`}
+      onError={(e) => { e.target.style.display = 'none' }}
+    />
+  )
+}
 
 export default function Games({ matches }) {
   const byGroup = {}
@@ -10,7 +23,6 @@ export default function Games({ matches }) {
     byGroup[m.group].push(m)
   }
 
-  // Map each group's unique rounds to Matchday 1/2/3 in order
   function groupRound(group, roundName) {
     const rounds = [...new Set((byGroup[group] || []).map((m) => m.round))]
     const idx = rounds.indexOf(roundName)
@@ -36,9 +48,15 @@ export default function Games({ matches }) {
                 return (
                   <div key={i} className={`game-row${played ? ' played' : ' upcoming'}`}>
                     <span className="game-md">{rd}</span>
-                    <span className={`game-team${win1 ? ' gw' : ''}`}>{m.team1}</span>
-                    <span className="game-score">{played ? `${s1} – ${s2}` : 'vs'}</span>
-                    <span className={`game-team right${win2 ? ' gw' : ''}`}>{m.team2}</span>
+                    <span className={`game-team${win1 ? ' gw' : ''}`}>
+                      <Flag name={m.team1} />
+                      <span className="game-abbr">{ab(m.team1)}</span>
+                    </span>
+                    <span className="game-score">{played ? `${s1}–${s2}` : 'vs'}</span>
+                    <span className={`game-team right${win2 ? ' gw' : ''}`}>
+                      <span className="game-abbr">{ab(m.team2)}</span>
+                      <Flag name={m.team2} flip />
+                    </span>
                   </div>
                 )
               })}

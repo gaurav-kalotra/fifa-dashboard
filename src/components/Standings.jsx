@@ -1,8 +1,9 @@
+import { ab, flagUrl } from '../utils'
+
 const GROUP_ORDER = 'ABCDEFGHIJKL'.split('')
 
 export default function Standings({ groups }) {
   const hasData = Object.keys(groups).length > 0
-
   if (!hasData) return <div className="empty">No standings data yet.</div>
 
   return (
@@ -22,35 +23,35 @@ export default function Standings({ groups }) {
                   <tr>
                     <th className="col-pos">#</th>
                     <th className="col-team-cell">Team</th>
-                    <th>P</th>
-                    <th>W</th>
-                    <th>D</th>
-                    <th>L</th>
-                    <th>GF</th>
-                    <th>GA</th>
-                    <th>GD</th>
+                    <th>P</th><th>W</th><th>D</th><th>L</th>
+                    <th>GF</th><th>GA</th><th>GD</th>
                     <th className="col-pts">Pts</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map((e, i) => (
-                    <tr key={e.t} className={i < 2 ? 'row-qualify' : ''}>
-                      <td className="col-pos">{i + 1}</td>
-                      <td className="col-team-cell">
-                        <div className="col-team-inner">
-                          <span className="tbl-name">{e.t}</span>
-                        </div>
-                      </td>
-                      <td>{e.p}</td>
-                      <td>{e.w}</td>
-                      <td>{e.d}</td>
-                      <td>{e.l}</td>
-                      <td>{e.gf}</td>
-                      <td>{e.ga}</td>
-                      <td>{e.gf - e.ga > 0 ? `+${e.gf - e.ga}` : e.gf - e.ga}</td>
-                      <td className="col-pts"><strong>{e.pts}</strong></td>
-                    </tr>
-                  ))}
+                  {entries.map((e, i) => {
+                    const url = flagUrl(e.t)
+                    return (
+                      <tr key={e.t} className={i < 2 ? 'row-qualify' : ''}>
+                        <td className="col-pos">{i + 1}</td>
+                        <td className="col-team-cell">
+                          <div className="col-team-inner">
+                            {url ? (
+                              <img src={url} alt={ab(e.t)} className="tbl-flag"
+                                onError={(ev) => { ev.target.style.display = 'none' }} />
+                            ) : (
+                              <div className="tbl-abbr">{ab(e.t)}</div>
+                            )}
+                            <span className="tbl-name">{ab(e.t)}</span>
+                          </div>
+                        </td>
+                        <td>{e.p}</td><td>{e.w}</td><td>{e.d}</td><td>{e.l}</td>
+                        <td>{e.gf}</td><td>{e.ga}</td>
+                        <td>{e.gf - e.ga > 0 ? `+${e.gf - e.ga}` : e.gf - e.ga}</td>
+                        <td className="col-pts"><strong>{e.pts}</strong></td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

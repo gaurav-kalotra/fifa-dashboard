@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ab, buildResolver } from '../utils'
+import { ab, flagUrl, buildResolver } from '../utils'
 
 const ROUNDS = [
   { key: 'Round of 32', label: 'R32' },
@@ -8,6 +8,22 @@ const ROUNDS = [
   { key: 'Semi-final', label: 'SF' },
   { key: 'Final', label: 'Final' },
 ]
+
+function TeamSlot({ code, real, score, isWinner, isPlayed }) {
+  const url = real ? flagUrl(real) : null
+  return (
+    <div className={`bk-team${isWinner ? ' bk-winner' : ''}${!real && !isPlayed ? ' bk-tbd' : ''}`}>
+      {url ? (
+        <img src={url} alt={ab(real)} className="bk-flag"
+          onError={(e) => { e.target.style.display = 'none' }} />
+      ) : (
+        <span className="bk-abbr">{real ? ab(real) : '—'}</span>
+      )}
+      <span className="bk-name">{real ? ab(real) : code}</span>
+      {score != null && <span className="bk-score">{score}</span>}
+    </div>
+  )
+}
 
 function BracketMatch({ match, resolve }) {
   const t1 = resolve(match.team1)
@@ -18,33 +34,19 @@ function BracketMatch({ match, resolve }) {
   const win2 = ft && s2 > s1
   const isPlayed = !!ft
 
-  const TeamRow = ({ code, real, score, isWinner }) => (
-    <div className={`bk-team${isWinner ? ' bk-winner' : ''}${!real && !isPlayed ? ' bk-tbd' : ''}`}>
-      <span className="bk-abbr">{real ? ab(real) : '—'}</span>
-      <span className="bk-name">{real || code}</span>
-      {score != null && <span className="bk-score">{score}</span>}
-    </div>
-  )
-
   return (
     <div className={`bk-match${isPlayed ? ' bk-played' : ''}`}>
-      {match.num && <div className="bk-num">#{match.num}</div>}
-      <TeamRow code={match.team1} real={t1} score={s1} isWinner={win1} />
-      <TeamRow code={match.team2} real={t2} score={s2} isWinner={win2} />
+      {match.num && <div className="bk-num">Match {match.num}</div>}
+      <TeamSlot code={match.team1} real={t1} score={s1} isWinner={win1} isPlayed={isPlayed} />
+      <TeamSlot code={match.team2} real={t2} score={s2} isWinner={win2} isPlayed={isPlayed} />
     </div>
   )
 }
 
 export default function Bracket({ matches, groups }) {
   const [activeRound, setActiveRound] = useState('Round of 32')
-
   const resolve = useMemo(() => buildResolver(groups, matches), [groups, matches])
-
-  const roundMatches = useMemo(
-    () => matches.filter((m) => m.round === activeRound),
-    [matches, activeRound]
-  )
-
+  const roundMatches = useMemo(() => matches.filter((m) => m.round === activeRound), [matches, activeRound])
   const cols = activeRound === 'Round of 32' ? 2 : 1
 
   return (
@@ -54,18 +56,14 @@ export default function Bracket({ matches, groups }) {
           const ms = matches.filter((m) => m.round === key)
           const played = ms.filter((m) => m.score?.ft).length
           return (
-            <button
-              key={key}
-              className={`bk-tab${activeRound === key ? ' active' : ''}`}
-              onClick={() => setActiveRound(key)}
-            >
+            <button key={key} className={`bk-tab${activeRound === key ? ' active' : ''}`}
+              onClick={() => setActiveRound(key)}>
               {label}
               <span className="bk-count">{played}/{ms.length}</span>
             </button>
           )
         })}
       </div>
-
       <div className={`bk-grid cols-${cols}`}>
         {roundMatches.map((m) => (
           <BracketMatch key={m.num} match={m} resolve={resolve} />
