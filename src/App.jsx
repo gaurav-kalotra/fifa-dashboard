@@ -6,7 +6,6 @@ import Games from './components/Games'
 import Standings from './components/Standings'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
-import Background from './components/Background'
 import Ticker from './components/Ticker'
 import './index.css'
 
@@ -16,14 +15,14 @@ const TV_INTERVAL_MS = 30_000
 
 const isTV = new URLSearchParams(window.location.search).get('tv') === '1'
 
-// Deterministic star positions (no random so render is stable)
-const STARS = Array.from({ length: 60 }, (_, i) => ({
+// Fewer stars for better Pi performance
+const STARS = Array.from({ length: 18 }, (_, i) => ({
   x: (i * 37.3 + 11.7) % 100,
   y: (i * 61.7 + 3.2) % 100,
-  size: 1 + (i % 3) * 0.5,
-  dur: 2.5 + (i % 6) * 0.6,
-  delay: (i * 0.37) % 7,
-  op: 0.12 + (i % 5) * 0.07,
+  size: 1.5 + (i % 3) * 0.8,
+  dur: 3.5 + (i % 4) * 1.2,
+  delay: (i * 0.7) % 8,
+  op: 0.15 + (i % 4) * 0.08,
 }))
 
 function Stars() {
@@ -98,7 +97,6 @@ export default function App() {
   if (isTV) {
     return (
       <div className="tv-frame">
-        <Background />
         <Stars />
         <div className="orb orb-1" />
         <div className="orb orb-2" />

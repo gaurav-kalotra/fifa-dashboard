@@ -82,14 +82,14 @@ export default function Matches({ matches }) {
     return s
   }, [rounds, activeIdx])
 
-  // Chronological display: active round first, ±2 rounds around it, then older ones dimmed
+  // Show 3 blocks: previous (dimmed), current (highlighted), next upcoming
   const visible = useMemo(() => {
     const out = []
-    // Show 1 round before active (just-completed), active, 2 rounds after
-    const start = Math.max(0, activeIdx - 1)
-    const end = Math.min(rounds.length - 1, activeIdx + 2)
-    for (let i = start; i <= end; i++) {
-      out.push({ round: rounds[i], idx: i, dim: i < activeIdx - 1 })
+    const slots = [activeIdx - 1, activeIdx, activeIdx + 1]
+    for (const i of slots) {
+      if (i >= 0 && i < rounds.length) {
+        out.push({ round: rounds[i], idx: i })
+      }
     }
     return out
   }, [rounds, activeIdx])
