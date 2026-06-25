@@ -98,9 +98,11 @@ export default function App() {
     return (
       <div className="tv-frame">
         <Stars />
-        <div className="orb orb-1" />
-        <div className="orb orb-2" />
-        <div className="orb orb-3" />
+        <div className="tv-orb tv-orb-1" />
+        <div className="tv-orb tv-orb-2" />
+        <div className="tv-orb tv-orb-3" />
+        <div className="tv-orb tv-orb-4" />
+        <div className="tv-bloom" />
 
         <div className="tv-header">
           <div className="tv-title-block">

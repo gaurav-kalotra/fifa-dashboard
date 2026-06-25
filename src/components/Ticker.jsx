@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { ab } from '../utils'
 
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
@@ -13,10 +13,10 @@ const FACTS = [
   { icon: '🏆', ctx: 'TRIVIA',  text: 'FIFA World Cup Trophy is 18-carat gold, weighing 6.175 kg' },
   { icon: '🇧🇷', ctx: 'HISTORY', text: 'Brazil hold the record with 5 World Cup titles' },
   { icon: '📅', ctx: 'WC2026',  text: 'Tournament runs June 11 – July 19, 2026' },
-  { icon: '🏟️', ctx: 'VENUES',  text: 'MetLife Stadium (NY/NJ) hosts the final on July 19' },
-  { icon: '🌐', ctx: 'WC2026',  text: '12 groups of 4 — top 2 plus 8 best 3rd-place advance to R32' },
+  { icon: '🏟️', ctx: 'VENUES',  text: 'MetLife Stadium (NY/NJ) hosts the Final on July 19' },
+  { icon: '🌐', ctx: 'WC2026',  text: '12 groups of 4 — top 2 plus 8 best 3rd-place teams advance' },
   { icon: '⚽', ctx: 'HISTORY', text: 'Germany & Italy have each lifted the trophy 4 times' },
-  { icon: '🔢', ctx: 'WC2026',  text: 'Vancouver, Toronto, Boston among host cities for first time' },
+  { icon: '🏙️', ctx: 'WC2026',  text: 'Vancouver, Toronto, Boston among host cities for first time' },
   { icon: '📺', ctx: 'WC2026',  text: 'WC2026 expected to draw over 5 billion global viewers' },
 ]
 
@@ -25,8 +25,20 @@ function getAthleteId(ref) {
   return ref.replace(/\?.*/,'').split('/').pop()
 }
 
+function shuffle(arr, seed) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor((Math.sin(seed + i * 7.31) * 0.5 + 0.5) * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function Ticker({ matches, groups }) {
   const [espnScorers, setEspnScorers] = useState([])
+  const [idx, setIdx]   = useState(0)
+  const [show, setShow] = useState(true)
+  const timer = useRef(null)
 
   useEffect(() => {
     const load = async () => {
@@ -34,7 +46,7 @@ export default function Ticker({ matches, groups }) {
         const r = await fetch(ESPN_LEADERS)
         const d = await r.json()
         const goals = d.categories?.find(c => c.name === 'goalsLeaders')
-        const top6 = (goals?.leaders || []).slice(0, 6)
+        const top6  = (goals?.leaders || []).slice(0, 6)
         const scorers = (await Promise.all(
           top6.map(async l => {
             const id = getAthleteId(l.athlete?.['$ref'])
@@ -59,47 +71,41 @@ export default function Ticker({ matches, groups }) {
     const played = matches.filter(m => m.score?.ft)
 
     // Upcoming (next 6 group matches)
-    const upcoming = matches.filter(m => !m.score?.ft && m.group).slice(0, 6)
-    for (const m of upcoming) {
-      const ctx = m.group?.replace('Group ', 'GRP ') || ''
-      out.push({ icon: '🗓️', ctx, text: `${ab(m.team1)} vs ${ab(m.team2)}`, type: 'upcoming' })
-    }
+    matches.filter(m => !m.score?.ft && m.group).slice(0, 6).forEach(m => {
+      out.push({ icon: '🗓️', ctx: m.group?.replace('Group ','GRP ') || '', text: `${ab(m.team1)} vs ${ab(m.team2)}`, type: 'upcoming' })
+    })
 
-    // ESPN top scorers
-    for (const s of espnScorers) {
+    // Golden Boot
+    espnScorers.forEach(s => {
       out.push({ icon: '🥅', ctx: 'GOLDEN BOOT', text: `${s.name} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`, type: 'stat' })
-    }
+    })
 
-    // Qualification / elimination from computed standings
+    // Qualification / elimination
     for (const [g, entries] of Object.entries(groups || {})) {
       if (!entries?.length) continue
-      if (entries[1]?.pts >= 6) {
+      if (entries[1]?.pts >= 6)
         out.push({ icon: '✅', ctx: `GROUP ${g}`, text: `${ab(entries[0].t)} & ${ab(entries[1].t)} advance to Round of 32`, type: 'qual' })
-      }
-      const elim = entries.filter(e => e.p >= 2 && e.pts === 0)
-      for (const e of elim) {
+      entries.filter(e => e.p >= 2 && e.pts === 0).forEach(e =>
         out.push({ icon: '⚠️', ctx: `GROUP ${g}`, text: `${ab(e.t)} need a win to stay alive`, type: 'danger' })
-      }
+      )
     }
 
-    // Best attack / best defense
+    // Tournament stats
     const all = Object.values(groups || {}).flat()
     if (all.length) {
-      const topAtk = [...all].sort((a, b) => b.gf - a.gf)[0]
-      if (topAtk?.gf >= 4)
-        out.push({ icon: '⚡', ctx: 'ATTACK', text: `${ab(topAtk.t)} lead the tournament with ${topAtk.gf} goals`, type: 'stat' })
-      const topDef = [...all].filter(e => e.p > 0).sort((a, b) => a.ga - b.ga)[0]
-      if (topDef?.ga === 0 && topDef.p >= 2)
-        out.push({ icon: '🛡️', ctx: 'DEFENSE', text: `${ab(topDef.t)} – ${topDef.p} games played, zero goals conceded`, type: 'stat' })
+      const top = [...all].sort((a, b) => b.gf - a.gf)[0]
+      if (top?.gf >= 4)
+        out.push({ icon: '⚡', ctx: 'ATTACK', text: `${ab(top.t)} lead the tournament with ${top.gf} goals scored`, type: 'stat' })
+      const def = [...all].filter(e => e.p > 0).sort((a, b) => a.ga - b.ga)[0]
+      if (def?.ga === 0 && def.p >= 2)
+        out.push({ icon: '🛡️', ctx: 'DEFENSE', text: `${ab(def.t)} – ${def.p} games, zero goals conceded`, type: 'stat' })
     }
 
     // Biggest win
     if (played.length) {
-      const big = [...played].sort((a, b) => {
-        const da = Math.abs(a.score.ft[0] - a.score.ft[1])
-        const db = Math.abs(b.score.ft[0] - b.score.ft[1])
-        return db - da
-      })[0]
+      const big = [...played].sort((a, b) =>
+        Math.abs(b.score.ft[0]-b.score.ft[1]) - Math.abs(a.score.ft[0]-a.score.ft[1])
+      )[0]
       const diff = Math.abs(big.score.ft[0] - big.score.ft[1])
       if (diff >= 3) {
         const [s1, s2] = big.score.ft
@@ -107,24 +113,29 @@ export default function Ticker({ matches, groups }) {
       }
     }
 
-    // Static facts (rotated for variety)
+    // Static facts (rotated then shuffled)
     const shift = played.length % FACTS.length
     out.push(...FACTS.slice(shift), ...FACTS.slice(0, shift))
 
-    // Deterministic shuffle keyed to played count so order changes as tournament progresses
-    const seed = played.length
-    return out.sort((a, b) => {
-      const ha = Math.sin(seed + out.indexOf(a) * 7.3) * 10000
-      const hb = Math.sin(seed + out.indexOf(b) * 7.3) * 10000
-      return (ha - Math.floor(ha)) - (hb - Math.floor(hb))
-    })
+    return shuffle(out, played.length)
   }, [matches, groups, espnScorers])
 
-  if (!items.length) return null
+  // Fade cycle: show 6s, fade out 0.6s, switch, fade in
+  useEffect(() => {
+    if (!items.length) return
+    const cycle = () => {
+      setShow(false)
+      timer.current = setTimeout(() => {
+        setIdx(i => (i + 1) % items.length)
+        setShow(true)
+      }, 650)
+    }
+    const iv = setInterval(cycle, 7000)
+    return () => { clearInterval(iv); clearTimeout(timer.current) }
+  }, [items.length])
 
-  // Duration: 5s per item, minimum 100s
-  const duration = Math.max(100, items.length * 5)
-  const doubled = [...items, ...items]
+  if (!items.length) return null
+  const item = items[idx] || items[0]
 
   return (
     <div className="ticker">
@@ -132,21 +143,15 @@ export default function Ticker({ matches, groups }) {
         <span className="ticker-icon">⚽</span>
         <span>WC2026</span>
       </div>
-      <div className="ticker-track">
-        <div
-          className="ticker-scroll"
-          key={`tk-${items.length}`}
-          style={{ animationDuration: `${duration}s` }}
-        >
-          {doubled.map((item, i) => (
-            <span key={i} className={`ticker-item ${item.type}`}>
-              <span className="ticker-item-icon">{item.icon}</span>
-              <span className="ticker-ctx">{item.ctx}</span>
-              {item.text}
-              <span className="ticker-sep">◆</span>
-            </span>
-          ))}
+      <div className="ticker-stage">
+        <div className={`ticker-item-fade${show ? ' show' : ''} ${item.type}`}>
+          <span className="ticker-item-icon">{item.icon}</span>
+          <span className="ticker-ctx">{item.ctx}</span>
+          <span className="ticker-text">{item.text}</span>
         </div>
+      </div>
+      <div className="ticker-counter">
+        {idx + 1} / {items.length}
       </div>
     </div>
   )
