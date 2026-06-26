@@ -4,11 +4,16 @@ import { ab, flagUrl } from '../utils'
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
 const ESPN_ATHLETE = id =>
   `https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/${id}?lang=en&region=us`
-const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY
-const APIFOOTBALL_PLAYER = name =>
-  `https://api-football-v1.p.rapidapi.com/v3/players?search=${encodeURIComponent(name)}&season=2024`
+const APISPORTS_KEY = import.meta.env.VITE_RAPIDAPI_KEY
+// PL, La Liga, Ligue 1 — covers ~95% of WC top scorers
+const CLUB_LEAGUES = [39, 140, 61]
+const APISPORTS_PLAYER = (name, league) =>
+  `https://v3.football.api-sports.io/players?search=${encodeURIComponent(name)}&league=${league}&season=2024`
 const TSDB_SEARCH = q =>
   `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(q)}`
+
+// Module-level cache: one lookup per player per session
+const photoCache = {}
 
 function stripDiacritics(str) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -16,27 +21,35 @@ function stripDiacritics(str) {
 
 async function fetchPlayerPhoto(rawName) {
   const name = stripDiacritics(rawName)
-  // Try API-Football first (best coverage) if key present
-  if (RAPIDAPI_KEY) {
-    try {
-      const r = await fetch(APIFOOTBALL_PLAYER(name), {
-        headers: { 'X-RapidAPI-Key': RAPIDAPI_KEY, 'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' }
-      })
-      const d = await r.json()
-      const photo = d.response?.[0]?.player?.photo
-      if (photo) return photo
-    } catch {}
+  if (name in photoCache) return photoCache[name]
+
+  // API-Sports: search by last name across top club leagues
+  if (APISPORTS_KEY) {
+    const lastName = name.split(' ').pop()
+    for (const league of CLUB_LEAGUES) {
+      try {
+        const r = await fetch(APISPORTS_PLAYER(lastName, league), {
+          headers: { 'x-apisports-key': APISPORTS_KEY }
+        })
+        const d = await r.json()
+        const photo = d.response?.[0]?.player?.photo
+        if (photo) { photoCache[name] = photo; return photo }
+      } catch {}
+    }
   }
-  // Fallback: TheSportsDB (free, no key)
+
+  // Fallback: TheSportsDB (free, no limit)
   try {
-    const search = async q => {
+    const tsdb = async q => {
       const r = await fetch(TSDB_SEARCH(q))
       const d = await r.json()
       const p = d.player?.[0]
       return p?.strCutout || p?.strThumb || null
     }
-    return (await search(name)) || (await search(name.split(' ').pop()))
-  } catch { return null }
+    const photo = (await tsdb(name)) || (await tsdb(name.split(' ').pop()))
+    photoCache[name] = photo
+    return photo
+  } catch { photoCache[name] = null; return null }
 }
 
 const FACTS = [
