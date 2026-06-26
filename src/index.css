@@ -611,13 +611,13 @@ body.tv-mode { overflow: hidden; }
   position: relative; overflow: hidden;
 }
 
-/* Dark overlay — sits behind all content (z-index:0 < content z-index:1) */
+/* Dark overlay — middle-ground between dense matches and sparse schedule */
 .tv-frame::before {
   content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
   background:radial-gradient(ellipse 60% 55% at 50% 50%,
-    rgba(0,0,0,0.55) 0%,
-    rgba(0,0,0,0.72) 50%,
-    rgba(0,0,0,0.88) 100%
+    rgba(0,0,0,0.48) 0%,
+    rgba(0,0,0,0.64) 50%,
+    rgba(0,0,0,0.80) 100%
   );
 }
 
@@ -745,12 +745,13 @@ body.tv-mode { overflow: hidden; }
 
 /* Progress bar: cyan → gold */
 .tv-progress {
-  height:2px; flex-shrink:0; width:0%;
-  background:linear-gradient(90deg, transparent 0%, #22d3ee 20%, #fbbf24 80%, transparent 100%);
+  height:2px; flex-shrink:0; width:100%;
+  background:linear-gradient(90deg, transparent 0%, #4472D4 20%, #E61D25 50%, #4472D4 80%, transparent 100%);
+  transform:scaleX(0); transform-origin:50% 50%;
   animation:tv-progress 30s linear both;
   position:relative; z-index:1;
 }
-@keyframes tv-progress { from{width:0%} to{width:100%} }
+@keyframes tv-progress { from{transform:scaleX(0)} to{transform:scaleX(1)} }
 
 /* Content */
 .tv-content {
@@ -964,7 +965,7 @@ body.tv-mode { overflow: hidden; }
 /* Block = one matchday's card */
 .mx-block {
   flex:1; min-width:0;
-  background:rgba(3,6,18,.52); border:1px solid rgba(255,255,255,.12);
+  background:rgba(3,6,18,.38); border:1px solid rgba(255,255,255,.12);
   border-top:2px solid rgba(255,255,255,.18); border-radius:8px;
   overflow:hidden; backdrop-filter:blur(18px) saturate(1.2);
   display:flex; flex-direction:column;
@@ -1327,8 +1328,9 @@ body.tv-mode { overflow: hidden; }
 }
 .sch-groups-col { flex:1; display:flex; flex-direction:column; gap:.2vh; overflow:hidden; }
 .sch-group {
-  background:rgba(255,255,255,.055);
-  border:1px solid rgba(255,255,255,.1);
+  background:rgba(3,6,18,.38);
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(18px) saturate(1.2);
   border-left:3px solid rgba(251,191,36,.5);
   border-radius:4px; overflow:hidden; flex:1; min-height:0;
 }
