@@ -758,7 +758,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             })(),
             state,
             clock:     m.MatchTime || existing.clock || '',
-            isHT:      m.MatchTime === 'HT' || existing.isHT || false,
+            isHT:      m.MatchTime === 'HT',
             liveScore: state==='in'   ? sc : null,
             postScore: state==='post' ? sc : null,
             _espnId:   existing._espnId || espnIds[key] || null,
