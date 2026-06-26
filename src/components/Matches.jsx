@@ -384,18 +384,12 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
 
         {/* Time + venue — all cards, all match states */}
         {!isLive && (localTime||venue) && (() => {
-          const { stadium, cityLine, country } = splitVenue(venue)
-          const vFlag = country ? flagUrl(country) : null
+          const { stadium, cityLine } = splitVenue(venue)
           return (
             <div className="mx-match-detail">
               {localTime && <span className="mx-match-time">{localTime}</span>}
               {stadium && <span className="mx-match-venue">{stadium}</span>}
-              {(cityLine||vFlag) && (
-                <span className="mx-match-venue-city">
-                  {cityLine}
-                  {vFlag && <img src={vFlag} alt={country} className="mx-venue-flag" />}
-                </span>
-              )}
+              {cityLine && <span className="mx-match-venue-city">{cityLine}</span>}
             </div>
           )
         })()}

@@ -1099,13 +1099,8 @@ body.tv-mode { overflow: hidden; }
   color:rgba(247,245,240,.3); text-align:center; line-height:1.25;
 }
 .mx-match-venue-city {
-  display:flex; align-items:center; justify-content:center; gap:3px;
   font-family:'Space Mono',monospace; font-size:0.78vh;
   color:rgba(247,245,240,.22); text-align:center; line-height:1.2;
-}
-.mx-venue-flag {
-  width:14px; height:10px; object-fit:cover; border-radius:1px;
-  border:1px solid rgba(255,255,255,.12); flex-shrink:0;
 }
 
 /* ── Live section ───────────────────────────────────── */
