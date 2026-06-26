@@ -4,6 +4,17 @@ import { ab, flagUrl } from '../utils'
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
 const ESPN_ATHLETE = id =>
   `https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/${id}?lang=en&region=us`
+const TSDB_PHOTO = name =>
+  `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`
+
+async function fetchPlayerPhoto(name) {
+  try {
+    const r = await fetch(TSDB_PHOTO(name))
+    const d = await r.json()
+    const p = d.player?.[0]
+    return p?.strCutout || p?.strThumb || null
+  } catch { return null }
+}
 
 const FACTS = [
   { icon: '🏟️', ctx: 'WC2026',  text: '104 matches across 16 cities in USA, Canada & Mexico' },
@@ -51,11 +62,13 @@ export default function Ticker({ matches, groups }) {
             try {
               const ar = await fetch(ESPN_ATHLETE(id))
               const ad = await ar.json()
+              const name = ad.displayName || ad.fullName || ''
+              const photo = name ? await fetchPlayerPhoto(name) : null
               return {
-                name: ad.displayName || ad.fullName || '',
+                name,
                 goals: l.value,
                 jersey: ad.jersey || '',
-                photo: ad.headshot?.href || `https://a.espncdn.com/i/headshots/soccer/players/full/${id}.png`,
+                photo,
               }
             } catch { return null }
           })
