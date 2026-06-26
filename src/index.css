@@ -590,7 +590,8 @@ body {
 }
 
 /* ── TV / Screensaver mode (?tv=1) ───────────────────── */
-body.tv-mode { overflow: hidden; }
+body.tv-mode { overflow: hidden; cursor: none; }
+body.tv-mode * { cursor: none; }
 
 /* ── Premium broadcast theme ──────────────────────────── */
 .tv-frame {
