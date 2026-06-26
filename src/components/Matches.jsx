@@ -7,6 +7,7 @@ const ESPN_SUMMARY = id => `https://site.api.espn.com/apis/site/v2/sports/soccer
 function normalTeam(n = '') {
   return n.toLowerCase()
     .replace(/united states/i, 'usa')
+    .replace(/türkiye/i, 'turkey')
     .replace(/\./g, '').replace(/[^a-z0-9]/g, '')
 }
 function teamsKey(t1, t2) {
@@ -95,15 +96,13 @@ function fmtLocalTime(isoDate) {
 // ── Match row ─────────────────────────────────────────────────
 function MatchRow({ m, showDetails, espnInfo }) {
   const ft = m.score?.ft
-  const [s1, s2] = ft || []
   const espnState = espnInfo?.state
-  // Only ESPN 'in' state counts as truly live — pre-game unplayed matches are NOT live
-  const isLive = espnState === 'in'
-  // Scores: prefer openfootball (source of truth), fall back to ESPN
-  const displayScore = ft
-    || (espnState === 'post' ? espnInfo.postScore : null)
+  // Scores: prefer openfootball (source of truth), fall back to ESPN post-score
+  const displayScore = ft || (espnState === 'post' ? espnInfo?.postScore : null)
   const [ds1, ds2] = displayScore || []
   const played = !!displayScore
+  // Only live if ESPN says in-progress AND game isn't already complete
+  const isLive = !played && espnState === 'in'
   const win1 = played && ds1 > ds2
   const win2 = played && ds2 > ds1
   const url1 = flagUrl(m.team1)
@@ -143,7 +142,7 @@ function MatchRow({ m, showDetails, espnInfo }) {
 }
 
 // ── Matchday block ────────────────────────────────────────────
-function RoundBlock({ roundName, ms, liveNums, highlight, showDetails, espnMap }) {
+function RoundBlock({ roundName, ms, highlight, showDetails, espnMap }) {
   const played = ms.filter(m => m.score?.ft).length
   return (
     <div className={`mx-block${highlight ? ' current' : ''}`}>
@@ -317,15 +316,6 @@ export default function Matches({ matches }) {
     return { rounds, activeIdx }
   }, [matches])
 
-  const liveNums = useMemo(() => {
-    const s = new Set()
-    const [, ms] = rounds[activeIdx] || [, []]
-    if (ms.some(m => m.score?.ft) && ms.some(m => !m.score?.ft)) {
-      for (const m of ms) if (!m.score?.ft) s.add(m.num ?? `${m.team1}-${m.team2}`)
-    }
-    return s
-  }, [rounds, activeIdx])
-
   const visible = useMemo(() => {
     const out = []
     for (const i of [activeIdx - 1, activeIdx, activeIdx + 1]) {
@@ -355,7 +345,6 @@ export default function Matches({ matches }) {
             key={name}
             roundName={name}
             ms={ms}
-            liveNums={liveNums}
             highlight={idx === activeIdx}
             showDetails={idx === activeIdx}
             espnMap={espnMap}
