@@ -152,7 +152,7 @@ export default function Ticker({ matches, groups }) {
 
     // Scorers stay as a consecutive block at the top; rest is shuffled
     const scorerItems = espnScorers.map((s, rank) => ({
-      icon: '🥅', ctx: 'GOLDEN BOOT',
+      icon: '🥅', ctx: '🥾', ctxBoot: true,
       text: `${rank + 1}. ${s.name}${s.jersey ? ` #${s.jersey}` : ''} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
       photo: s.photo,
       type: 'stat',
@@ -190,7 +190,7 @@ export default function Ticker({ matches, groups }) {
                 const f = flagUrl(t)
                 return f ? <img key={t} src={f} alt={t} className="ticker-flag" /> : null
               })}
-              <span className="ticker-ctx">{item.ctx}</span>
+              <span className={item.ctxBoot ? 'ticker-ctx ticker-boot-icon' : 'ticker-ctx'}>{item.ctx}</span>
               {item.text}
               <span className="ticker-sep">◆</span>
             </span>
