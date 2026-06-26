@@ -1,6 +1,26 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { ab, flagUrl, buildTeamStatusMap, computeGroups } from '../utils'
 
+// WC2026 host city → 2-letter state/province/state code
+const CITY_STATE = {
+  'Arlington':'TX','Dallas':'TX','Houston':'TX','Frisco':'TX',
+  'Los Angeles':'CA','Inglewood':'CA','Santa Clara':'CA','San Francisco':'CA',
+  'East Rutherford':'NJ','New York':'NJ',
+  'Seattle':'WA','Miami':'FL','Atlanta':'GA',
+  'Foxborough':'MA','Boston':'MA',
+  'Kansas City':'MO','Philadelphia':'PA','Glendale':'AZ',
+  'Toronto':'ON','Vancouver':'BC',
+  'Mexico City':'CDMX','Guadalajara':'JAL','Monterrey':'NL',
+}
+
+function appendState(venue) {
+  if (!venue) return venue
+  const city = Object.keys(CITY_STATE).find(c => venue.includes(c))
+  if (!city) return venue
+  const st = CITY_STATE[city]
+  return venue.includes(st) ? venue : `${venue}, ${st}`
+}
+
 // ── FIFA (primary) ────────────────────────────────────────────
 const FIFA_BASE      = 'https://api.fifa.com/api/v3'
 const FIFA_COMP      = 17
@@ -491,7 +511,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
           espnIds[key] = ev.id
           newMap[key]  = {
             mk: `espn:${ev.id}`, date: ev.date,
-            venue: [comp.venue?.fullName||comp.venue?.shortName, comp.venue?.address?.city||comp.venue?.city].filter(Boolean).join(', '),
+            venue: appendState([comp.venue?.fullName||comp.venue?.shortName, comp.venue?.address?.city||comp.venue?.city].filter(Boolean).join(', ')),
             state, clock: ev.status?.displayClock||'',
             liveScore:  state==='in'   ? sc : null,
             postScore:  state==='post' ? sc : null,
@@ -523,7 +543,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
                         || m.Stadium?.City?.[0]?.Description
                         || m.Stadium?.City?.Name?.[0]?.Description
                         || m.Stadium?.CityName || ''
-              return [stadium, city].filter(Boolean).join(', ') || existing.venue || ''
+              return appendState([stadium, city].filter(Boolean).join(', ')) || existing.venue || ''
             })(),
             state,
             clock:     m.MatchTime || existing.clock || '',

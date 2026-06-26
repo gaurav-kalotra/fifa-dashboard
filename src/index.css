@@ -702,6 +702,12 @@ body.tv-mode { overflow: hidden; }
 
 .tv-trophy { font-size:clamp(20px,3.2vh,40px); filter:drop-shadow(0 0 16px rgba(251,191,36,0.85)) drop-shadow(0 0 6px rgba(251,191,36,0.5)); animation:trophy-bob 3s ease-in-out infinite; }
 .tv-trophy-img { height:clamp(28px,4.5vh,56px); width:auto; object-fit:contain; filter:drop-shadow(0 0 12px rgba(251,191,36,0.7)); animation:trophy-bob 3s ease-in-out infinite; }
+.tv-bg-logo {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  height:clamp(160px,28vh,340px); width:auto; object-fit:contain; pointer-events:none; z-index:0;
+  opacity:.06; filter:drop-shadow(0 0 40px rgba(251,191,36,0.5));
+  animation:trophy-bob 3s ease-in-out infinite;
+}
 @keyframes trophy-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 
 .tv-title {
@@ -712,11 +718,11 @@ body.tv-mode { overflow: hidden; }
   text-shadow: 0 0 40px rgba(6,182,212,0.4);
 }
 .tv-subtitle {
-  font-size:clamp(9px,1.15vh,13px);
-  color:rgba(251,191,36,0.7);
-  letter-spacing:.2em; text-transform:uppercase;
-  font-family:'Inter',system-ui,sans-serif; margin-top:3px;
+  display:flex; align-items:center; gap:.7vw;
+  font-size:clamp(8px,1vh,12px); font-family:'Space Mono',monospace;
+  color:rgba(251,191,36,0.65); letter-spacing:.22em; text-transform:uppercase; margin-top:4px;
 }
+.tv-sub-dot { color:rgba(255,255,255,.2); font-size:.7em; letter-spacing:0; }
 .tv-tabs-indicator { display:flex; gap:1.8vw; align-items:center; }
 .tv-tab-pip {
   font-family:'Oswald',system-ui,sans-serif;
@@ -787,6 +793,10 @@ body.tv-mode { overflow: hidden; }
 .ticker-player-photo {
   width:3.2vh; height:3.2vh; border-radius:50%; object-fit:cover; object-position:top;
   border:1px solid rgba(255,255,255,.25); flex-shrink:0; background:rgba(255,255,255,.1);
+}
+.ticker-flag {
+  height:2.2vh; width:auto; border-radius:2px; object-fit:cover; flex-shrink:0;
+  box-shadow:0 1px 3px rgba(0,0,0,.4);
 }
 .ticker-ctx {
   font-family:'Oswald',system-ui,sans-serif; font-size:1.05vh;
