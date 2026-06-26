@@ -93,12 +93,12 @@ function fmtLocalTime(isoDate) {
 }
 
 // ── Match row ─────────────────────────────────────────────────
-function MatchRow({ m, isLive: isLiveHint, showDetails, espnInfo }) {
+function MatchRow({ m, showDetails, espnInfo }) {
   const ft = m.score?.ft
   const [s1, s2] = ft || []
   const espnState = espnInfo?.state
-  // A game is live if openfootball hints at it OR ESPN confirms it
-  const isLive = isLiveHint || espnState === 'in'
+  // Only ESPN 'in' state counts as truly live — pre-game unplayed matches are NOT live
+  const isLive = espnState === 'in'
   // Scores: prefer openfootball (source of truth), fall back to ESPN
   const displayScore = ft
     || (espnState === 'post' ? espnInfo.postScore : null)
@@ -127,9 +127,9 @@ function MatchRow({ m, isLive: isLiveHint, showDetails, espnInfo }) {
           : isLive && espnInfo?.liveScore
             ? <span className="mx-score mx-score-live">{espnInfo.liveScore[0]}–{espnInfo.liveScore[1]}</span>
             : <span className="mx-vs">vs</span>}
-        {!isLive && showDetails && (localTime || venue) && (
+        {!isLive && showDetails && ((!played && localTime) || venue) && (
           <div className="mx-match-detail">
-            {localTime && <span className="mx-match-time">{localTime}</span>}
+            {!played && localTime && <span className="mx-match-time">{localTime}</span>}
             {venue && <span className="mx-match-venue">{venue}</span>}
           </div>
         )}
@@ -155,7 +155,6 @@ function RoundBlock({ roundName, ms, liveNums, highlight, showDetails, espnMap }
         {ms.map((m, i) => (
           <MatchRow
             key={i} m={m}
-            isLive={liveNums.has(m.num ?? `${m.team1}-${m.team2}`)}
             showDetails={showDetails}
             espnInfo={espnMap?.[teamsKey(m.team1, m.team2)]}
           />
@@ -268,7 +267,7 @@ export default function Matches({ matches }) {
           map[key] = {
             id: ev.id,
             date: ev.date,
-            venue: comp.venue?.shortName || comp.venue?.fullName || '',
+            venue: comp.venue?.fullName || comp.venue?.shortName || '',
             state,
             clock: ev.status?.displayClock,
             liveScore: state === 'in'  ? scores : null,

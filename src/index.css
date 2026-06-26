@@ -1021,8 +1021,7 @@ body.tv-mode { overflow: hidden; }
 }
 .mx-match-venue {
   font-family:'Inter',system-ui,sans-serif; font-size:0.9vh;
-  color:rgba(247,245,240,.3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  max-width:80px; text-align:center;
+  color:rgba(247,245,240,.3); text-align:center; line-height:1.25;
 }
 
 /* ── Live section ───────────────────────────────────── */
