@@ -1148,8 +1148,11 @@ body.tv-mode { overflow: hidden; }
 .sch-td-team { text-align:left; display:flex; align-items:center; gap:.3vw; padding-left:.4vw; }
 .sch-td-pts { font-family:'Space Mono',monospace; font-weight:700; color:#fff; }
 .sch-flag-xs { width:16px; height:10px; object-fit:cover; border-radius:1px; flex-shrink:0; border:1px solid rgba(255,255,255,.1); }
-.sch-row-adv td { color:rgba(247,245,240,.95); }
-.sch-row-adv .sch-td-team { border-left:2px solid rgba(74,222,128,.65); padding-left:calc(.4vw - 2px); }
+.sch-row-qual td { color:rgba(247,245,240,.95); }
+.sch-row-qual .sch-td-team { border-left:2px solid rgba(74,222,128,.75); padding-left:calc(.4vw - 2px); }
+.sch-row-tbd .sch-td-team { border-left:2px solid rgba(251,191,36,.75); padding-left:calc(.4vw - 2px); }
+.sch-row-elim td { color:rgba(247,245,240,.38); }
+.sch-row-elim .sch-td-team { border-left:2px solid rgba(239,68,68,.6); padding-left:calc(.4vw - 2px); }
 .sch-tbl td.pos { color:#3dffa0; }
 .sch-tbl td.neg { color:rgba(255,100,100,.8); }
 

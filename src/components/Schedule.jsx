@@ -25,6 +25,25 @@ function Flag({ name, cls = 'sch-flag' }) {
     : null
 }
 
+function teamStatus(entries, i) {
+  const e = entries[i]
+  const groupDone = entries.every(x => x.p === 3)
+  if (groupDone) {
+    if (i <= 1) return 'qual'
+    if (i === 2) return 'tbd'   // WC2026: best 3rd-place teams also advance
+    return 'elim'
+  }
+  const maxPts = e.pts + (3 - e.p) * 3
+  const second = entries[1]
+  if (i >= 2 && maxPts < (second?.pts ?? 0)) return 'elim'
+  if (i <= 1) {
+    const third = entries[2]
+    const thirdMax = (third?.pts ?? 0) + (3 - (third?.p ?? 0)) * 3
+    if (thirdMax < e.pts) return 'qual'
+  }
+  return 'tbd'
+}
+
 // ── Compact group table (full stats) ─────────────────────────
 function GroupTable({ letter, entries }) {
   if (!entries?.length) return null
@@ -40,20 +59,23 @@ function GroupTable({ letter, entries }) {
           </tr>
         </thead>
         <tbody>
-          {entries.map((e, i) => (
-            <tr key={e.t} className={i < 2 ? 'sch-row-adv' : ''}>
-              <td className="sch-td-team">
-                <Flag name={e.t} cls="sch-flag-xs" />
-                <span>{ab(e.t)}</span>
-              </td>
-              <td>{e.p}</td><td>{e.w}</td><td>{e.d}</td><td>{e.l}</td>
-              <td>{e.gf}</td><td>{e.ga}</td>
-              <td className={e.gf - e.ga > 0 ? 'pos' : e.gf - e.ga < 0 ? 'neg' : ''}>
-                {e.gf - e.ga > 0 ? `+${e.gf - e.ga}` : e.gf - e.ga}
-              </td>
-              <td className="sch-td-pts">{e.pts}</td>
-            </tr>
-          ))}
+          {entries.map((e, i) => {
+            const status = teamStatus(entries, i)
+            return (
+              <tr key={e.t} className={`sch-row-${status}`}>
+                <td className="sch-td-team">
+                  <Flag name={e.t} cls="sch-flag-xs" />
+                  <span>{ab(e.t)}</span>
+                </td>
+                <td>{e.p}</td><td>{e.w}</td><td>{e.d}</td><td>{e.l}</td>
+                <td>{e.gf}</td><td>{e.ga}</td>
+                <td className={e.gf - e.ga > 0 ? 'pos' : e.gf - e.ga < 0 ? 'neg' : ''}>
+                  {e.gf - e.ga > 0 ? `+${e.gf - e.ga}` : e.gf - e.ga}
+                </td>
+                <td className="sch-td-pts">{e.pts}</td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
