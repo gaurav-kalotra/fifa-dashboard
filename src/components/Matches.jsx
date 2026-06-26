@@ -83,6 +83,11 @@ function parseFifaLineup(data) {
 }
 
 function parseEspnTimeline(summary) {
+  // Extract home/away team IDs from the summary header for side assignment
+  const comp = summary?.header?.competitions?.[0]
+  const homeId = String(comp?.competitors?.find(c=>c.homeAway==='home')?.team?.id || '')
+  const awayId = String(comp?.competitors?.find(c=>c.homeAway==='away')?.team?.id || '')
+
   const seen = new Set()
   const items = [...(summary?.plays || []), ...(summary?.keyEvents || []), ...(summary?.scoringPlays || [])]
     .filter(p => { const k = p.id ?? JSON.stringify(p); return seen.has(k) ? false : (seen.add(k), true) })
@@ -97,7 +102,9 @@ function parseEspnTimeline(summary) {
     const min = dv ? String(parseInt(dv) || dv.split(':')[0] || '') : typeof sv === 'number' ? String(Math.floor(sv/60)) : ''
     const scorer = p.participants?.find(x => (x.type?.id === 'scorer' || x.type?.id === '1' || (x.type?.text||'').toLowerCase().includes('scorer')))
     const player = scorer?.athlete?.displayName || p.participants?.[0]?.athlete?.displayName || ''
-    const side = '' // ESPN summary doesn't reliably give side in plays
+    const teamId = String(p.team?.id || '')
+    const side = homeId && teamId === homeId ? 'home'
+               : awayId && teamId === awayId ? 'away' : ''
     out.push({ min, type: isGoal ? 'goal' : tt.includes('red') ? 'red' : 'yellow', player, side })
   }
   return out.sort((a,b) => (parseInt(a.min)||0) - (parseInt(b.min)||0))
