@@ -93,12 +93,19 @@ function fmtLocalTime(isoDate) {
 }
 
 // ── Match row ─────────────────────────────────────────────────
-function MatchRow({ m, isLive, showDetails, espnInfo }) {
+function MatchRow({ m, isLive: isLiveHint, showDetails, espnInfo }) {
   const ft = m.score?.ft
   const [s1, s2] = ft || []
-  const played = !!ft
-  const win1 = played && s1 > s2
-  const win2 = played && s2 > s1
+  const espnState = espnInfo?.state
+  // A game is live if openfootball hints at it OR ESPN confirms it
+  const isLive = isLiveHint || espnState === 'in'
+  // Scores: prefer openfootball (source of truth), fall back to ESPN
+  const displayScore = ft
+    || (espnState === 'post' ? espnInfo.postScore : null)
+  const [ds1, ds2] = displayScore || []
+  const played = !!displayScore
+  const win1 = played && ds1 > ds2
+  const win2 = played && ds2 > ds1
   const url1 = flagUrl(m.team1)
   const url2 = flagUrl(m.team2)
   const localTime = espnInfo ? fmtLocalTime(espnInfo.date) : null
@@ -116,7 +123,7 @@ function MatchRow({ m, isLive, showDetails, espnInfo }) {
           <span className="mx-live-match-clock">{espnInfo.clock}</span>
         )}
         {played
-          ? <span className="mx-score">{s1}–{s2}</span>
+          ? <span className="mx-score">{ds1}–{ds2}</span>
           : isLive && espnInfo?.liveScore
             ? <span className="mx-score mx-score-live">{espnInfo.liveScore[0]}–{espnInfo.liveScore[1]}</span>
             : <span className="mx-vs">vs</span>}
@@ -256,15 +263,16 @@ export default function Matches({ matches }) {
           const [h, a] = comp?.competitors || []
           if (!h || !a) continue
           const key = teamsKey(h.team?.displayName || '', a.team?.displayName || '')
+          const state = ev.status?.type?.state
+          const scores = [parseInt(h.score ?? '0'), parseInt(a.score ?? '0')]
           map[key] = {
             id: ev.id,
             date: ev.date,
             venue: comp.venue?.shortName || comp.venue?.fullName || '',
-            state: ev.status?.type?.state,
+            state,
             clock: ev.status?.displayClock,
-            liveScore: ev.status?.type?.state === 'in'
-              ? [parseInt(h.score ?? '0'), parseInt(a.score ?? '0')]
-              : null,
+            liveScore: state === 'in'  ? scores : null,
+            postScore: state === 'post' ? scores : null,
           }
         }
         setEspnMap(map)
