@@ -20,12 +20,26 @@ const STATE_COUNTRY = {
   CDMX:'Mexico',JAL:'Mexico',NL:'Mexico',
 }
 
+// Full state/province names to strip when abbreviation will be added
+const FULL_STATE_NAMES = [
+  'New Jersey','New York','Texas','California','Washington','Florida',
+  'Georgia','Massachusetts','Missouri','Pennsylvania','Arizona',
+  'Ontario','British Columbia',
+  'Jalisco','Nuevo León','Nuevo Leon',
+]
+
 function appendState(venue) {
   if (!venue) return venue
-  const city = Object.keys(CITY_STATE).find(c => venue.includes(c))
-  if (!city) return venue
+  // Strip full state names (redundant once abbreviation is added)
+  let v = venue
+  for (const name of FULL_STATE_NAMES) {
+    v = v.replace(new RegExp(',\\s*' + name + '\\b', 'gi'), '')
+  }
+  v = v.replace(/,\s*,/g, ',').replace(/,\s*$/, '').trim()
+  const city = Object.keys(CITY_STATE).find(c => v.includes(c))
+  if (!city) return v
   const st = CITY_STATE[city]
-  return venue.includes(st) ? venue : `${venue}, ${st}`
+  return v.includes(st) ? v : `${v}, ${st}`
 }
 
 function splitVenue(venue) {

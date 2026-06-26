@@ -40,8 +40,8 @@ function Stars() {
   )
 }
 
-// Official WC2026 emblem — Wikimedia Commons CDN (confirmed working)
-const WC_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/120px-2026_FIFA_World_Cup_emblem.svg.png'
+// Official WC2026 logo (trophy + mosaic 26 pattern) — confirmed 342KB PNG
+const WC_LOGO = 'https://1000logos.net/wp-content/uploads/2023/05/World-Cup-2026-Logo.png'
 // Real FIFA World Cup trophy photo (Wikimedia Commons, confirmed 200px)
 const WC_TROPHY = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/FIFA_World_Cup_Trophy_%28Ank_Kumar%2C_Infosys_Limited%29_01.jpg/250px-FIFA_World_Cup_Trophy_%28Ank_Kumar%2C_Infosys_Limited%29_01.jpg'
 
