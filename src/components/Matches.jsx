@@ -76,12 +76,14 @@ const FT_GOAL    = new Set([0, 15])   // goal, penalty
 const FT_OWNGOAL = new Set([12])
 const FT_YELLOW  = new Set([3, 65])
 const FT_RED     = new Set([4, 5])
+const FT_SUB     = new Set([6, 19])   // substitution
 
 function classifyFifaEvt(type) {
   if (FT_OWNGOAL.has(type)) return 'goal'
   if (FT_GOAL.has(type))    return 'goal'
   if (FT_YELLOW.has(type))  return 'yellow'
   if (FT_RED.has(type))     return 'red'
+  if (FT_SUB.has(type))     return 'sub'
   return null
 }
 
@@ -92,7 +94,10 @@ function parseFifaEventsFromTeams(fd) {
     for (const ev of team?.Events || []) {
       const kind = classifyFifaEvt(ev.Type)
       if (!kind) continue
-      out.push({ min: String(ev.MatchMinute ?? ''), type: kind, player: ev.PlayerName?.[0]?.Description || '', side })
+      const player = ev.PlayerName?.[0]?.Description || ''
+      const playerOn = kind === 'sub'
+        ? (ev.SubstitutedPlayerName?.[0]?.Description || ev.PlayerName2?.[0]?.Description || '') : ''
+      out.push({ min: String(ev.MatchMinute ?? ''), type: kind, player, playerOn, side })
     }
   }
   return out.sort((a, b) => (parseInt(a.min)||0) - (parseInt(b.min)||0))
@@ -110,7 +115,9 @@ function parseFifaTimeline(data) {
                : (hoa===2||hoaS==='away'||hoaS==='a') ? 'away' : ''
     const player = ev.PlayerName?.[0]?.Description || ev.Player?.Name?.[0]?.Description
       || ev.NationalTeamPlayer?.PlayerName?.[0]?.Description || ''
-    out.push({ min: String(ev.MatchMinute ?? ev.Minute ?? ''), type: kind, player, side })
+    const playerOn = kind === 'sub'
+      ? (ev.SubstitutedPlayerName?.[0]?.Description || ev.PlayerName2?.[0]?.Description || '') : ''
+    out.push({ min: String(ev.MatchMinute ?? ev.Minute ?? ''), type: kind, player, playerOn, side })
   }
   return out.sort((a, b) => (parseInt(a.min)||0) - (parseInt(b.min)||0))
 }
@@ -158,15 +165,17 @@ function parseEspnTimeline(summary) {
     const ti = String(p.type?.id || '')
     const isGoal = tt.includes('goal') || ti === '70' || ti === '72' || tt === 'score'
     const isCard = tt.includes('yellow') || tt.includes('red') || ['93','94','95'].includes(ti)
-    if (!isGoal && !isCard) continue
+    const isSub  = tt.includes('substitut') || ti === '73'
+    if (!isGoal && !isCard && !isSub) continue
     const dv = p.clock?.displayValue, sv = p.clock?.value
     const min = dv ? String(parseInt(dv) || dv.split(':')[0] || '') : typeof sv === 'number' ? String(Math.floor(sv/60)) : ''
     const scorer = p.participants?.find(x => (x.type?.id === 'scorer' || x.type?.id === '1' || (x.type?.text||'').toLowerCase().includes('scorer')))
     const player = scorer?.athlete?.displayName || p.participants?.[0]?.athlete?.displayName || ''
+    const playerOn = isSub ? (p.participants?.find(x=>(x.type?.text||'').toLowerCase().includes('substitut'))?.athlete?.displayName || '') : ''
     const teamId = String(p.team?.id || '')
     const side = homeId && teamId === homeId ? 'home'
                : awayId && teamId === awayId ? 'away' : ''
-    out.push({ min, type: isGoal ? 'goal' : tt.includes('red') ? 'red' : 'yellow', player, side })
+    out.push({ min, type: isGoal ? 'goal' : isSub ? 'sub' : tt.includes('red') ? 'red' : 'yellow', player, playerOn, side })
   }
   return out.sort((a,b) => (parseInt(a.min)||0) - (parseInt(b.min)||0))
 }
@@ -187,9 +196,10 @@ function predictMatch(homeRank, awayRank) {
 // ── Utilities ─────────────────────────────────────────────────
 function EventIcon({ type }) {
   const t = (type || '').toLowerCase()
-  if (t === 'goal') return <span className="mx-evt-icon">⚽</span>
+  if (t === 'goal')   return <span className="mx-evt-icon">⚽</span>
   if (t === 'yellow') return <span className="mx-evt-card yellow" />
   if (t === 'red')    return <span className="mx-evt-card red" />
+  if (t === 'sub')    return <span className="mx-evt-icon" style={{fontSize:'.85em'}}>🔄</span>
   return <span>•</span>
 }
 
@@ -213,7 +223,13 @@ function annotatePlayerEvents(players, events) {
       const ew = (e.player||'').split(/\s+/).map(normName).filter(w => w.length > 2)
       return ew.some(w => pw.includes(w))
     })
-    return { ...p, goals: mine.filter(e=>e.type==='goal').length, yellows: mine.filter(e=>e.type==='yellow').length, reds: mine.filter(e=>e.type==='red').length }
+    return {
+      ...p,
+      goals:    mine.filter(e=>e.type==='goal').length,
+      yellows:  mine.filter(e=>e.type==='yellow').length,
+      reds:     mine.filter(e=>e.type==='red').length,
+      subbedOff: mine.some(e=>e.type==='sub'),
+    }
   })
 }
 
@@ -279,6 +295,101 @@ function HalfPitch({ players, side='home' }) {
         const n=col.length, x=colX[ci], y=n<=1?50:15+(i/(n-1))*70
         return <PitchPlayer key={p.id||`${ci}-${i}`} player={p} x={x} y={y} />
       }))}
+    </div>
+  )
+}
+
+// ── Vertical pitch (side panels during live games) ────────────
+// posRow: 0=ATT,1=MID,2=DEF,3=GK.  y=0% is top of pitch, 100% is bottom.
+// Home attacks upward (GK at bottom=85%), away attacks downward (GK at top=15%).
+const AWAY_COL_Y = [58, 43, 29, 15]  // ATT→MID→DEF→GK (away GK at top)
+const HOME_COL_Y = [42, 57, 71, 85]  // ATT→MID→DEF→GK (home GK at bottom)
+
+function VPlayer({ player, x, y }) {
+  const jerseyName = player.name ? player.name.split(/\s+/).slice(-1)[0] : player.jersey
+  const hasEvts = (player.goals>0)||(player.yellows>0)||(player.reds>0)
+  return (
+    <div className="mx-vp" style={{left:`${x}%`,top:`${y}%`}}>
+      <div className="mx-vp-badge">
+        <span className="mx-vp-num">{player.jersey}</span>
+        {hasEvts && (
+          <div className="mx-pp-events">
+            {Array.from({length:player.goals}).map((_,i)=><span key={`g${i}`} className="mx-pp-evt-ball">⚽</span>)}
+            {player.yellows>0 && <span className="mx-pp-evt-card yellow" />}
+            {player.reds>0    && <span className="mx-pp-evt-card red" />}
+          </div>
+        )}
+        {player.subbedOff && <span className="mx-vp-suboff">↓</span>}
+      </div>
+      <span className="mx-vp-name">{jerseyName}</span>
+    </div>
+  )
+}
+
+function LiveSidePanel({ liveMatch, timeline, lineup }) {
+  if (!liveMatch) return <div className="mx-live-panel-slot mx-lsp-empty" />
+
+  const homeEvts = timeline.filter(e=>e.side==='home')
+  const awayEvts = timeline.filter(e=>e.side==='away')
+  const subEvts  = timeline.filter(e=>e.type==='sub')
+  const homePlayers = annotatePlayerEvents(lineup?.home||[], homeEvts)
+  const awayPlayers = annotatePlayerEvents(lineup?.away||[], awayEvts)
+
+  const homeCols = [[],[],[],[]]
+  for (const p of homePlayers) homeCols[Math.min(posRow(p.pos),3)].push(p)
+  const awayCols = [[],[],[],[]]
+  for (const p of awayPlayers) awayCols[Math.min(posRow(p.pos),3)].push(p)
+  const spreadX = (i,n) => n<=1 ? 50 : 15+(i/(n-1))*70
+
+  const { homeAbbr, awayAbbr, homeScore, awayScore, clock, isHT } = liveMatch
+  return (
+    <div className="mx-live-panel-slot">
+      <div className="mx-lsp-hdr">
+        <div className="mx-lsp-team">
+          <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
+          <span className="mx-lsp-abbr">{homeAbbr}</span>
+        </div>
+        <div className="mx-lsp-mid">
+          <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
+          <span className="mx-lsp-clock">{isHT?'HT':clock}</span>
+        </div>
+        <div className="mx-lsp-team">
+          <span className="mx-lsp-abbr">{awayAbbr}</span>
+          <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
+        </div>
+      </div>
+      <div className="mx-vpitch">
+        <div className="mx-vp-tlabel top">
+          <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag sm" onError={e=>{e.target.style.display='none'}} />
+          <span>{awayAbbr}</span>
+          {lineup?.awayFormation && <span className="mx-vp-fmtn">{lineup.awayFormation}</span>}
+        </div>
+        <div className="mx-vp-tlabel bot">
+          <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag sm" onError={e=>{e.target.style.display='none'}} />
+          <span>{homeAbbr}</span>
+          {lineup?.homeFormation && <span className="mx-vp-fmtn">{lineup.homeFormation}</span>}
+        </div>
+        <div className="mx-vp-half" />
+        <div className="mx-vp-dot" />
+        {awayCols.map((col,ci)=>col.map((p,i)=>(
+          <VPlayer key={`a${p.id||`${ci}-${i}`}`} player={p} x={spreadX(i,col.length)} y={AWAY_COL_Y[ci]} />
+        )))}
+        {homeCols.map((col,ci)=>col.map((p,i)=>(
+          <VPlayer key={`h${p.id||`${ci}-${i}`}`} player={p} x={spreadX(i,col.length)} y={HOME_COL_Y[ci]} />
+        )))}
+        {!homePlayers.length && !awayPlayers.length && (
+          <span className="mx-vp-pending">⏱ Lineup pending</span>
+        )}
+      </div>
+      {subEvts.length>0 && (
+        <div className="mx-lsp-subs">
+          {subEvts.map((e,i)=>(
+            <span key={i} className="mx-lsp-sub">
+              🔄 <span className="mx-lsp-sub-min">{e.min}'</span>{' '}{e.playerOn||e.player}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -736,46 +847,50 @@ export default function Matches({ matches, groups, onLiveChange }) {
   return (
     <div className="mx-outer">
       <div className={`mx-schedule-row${hasLive?'':' no-live'}`}>
-        {visible.map(({ round:[name,ms], idx })=>(
-          <RoundBlock
-            key={name}
-            roundName={name}
-            ms={ms}
-            highlight={idx===activeIdx}
-            dayOffset={idx-activeIdx}
-            showDetails={idx===activeIdx || idx===activeIdx-1}
-            fifaMap={fifaMap}
-            statusMap={idx<=activeIdx ? statusMap : undefined}
-            timelines={timelines}
-            rankings={rankings}
-          />
-        ))}
-      </div>
-
-      {hasLive && (
-        <div className="mx-live-section">
-          <div className="mx-live-section-label">
-            <span className="mx-live-dot" />
-            LIVE NOW — {liveCount} match{liveCount>1?'es':''}
-            {liveCount>1 && (
-              <span className="mx-live-game-dots">
-                {liveMatches.map((_,i)=>(
-                  <button key={i} className={`mx-live-game-dot${i===safeIdx?' on':''}`}
-                    onClick={()=>setCurrentLiveIdx(i)} />
-                ))}
-              </span>
-            )}
-          </div>
-          {currentLive && (
-            <LiveMatchTile
-              key={currentLive.mk}
-              event={currentLive}
-              timeline={timelines[currentLive.mk]||[]}
-              lineup={lineups[currentLive.mk]}
+        {hasLive ? (
+          <>
+            <LiveSidePanel
+              liveMatch={liveMatches[0]||null}
+              timeline={liveMatches[0] ? (timelines[liveMatches[0].mk]||[]) : []}
+              lineup={liveMatches[0] ? lineups[liveMatches[0].mk] : null}
             />
-          )}
-        </div>
-      )}
+            {rounds[activeIdx] && (
+              <RoundBlock
+                key={rounds[activeIdx][0]}
+                roundName={rounds[activeIdx][0]}
+                ms={rounds[activeIdx][1]}
+                highlight={true}
+                dayOffset={0}
+                showDetails={true}
+                fifaMap={fifaMap}
+                statusMap={statusMap}
+                timelines={timelines}
+                rankings={rankings}
+              />
+            )}
+            <LiveSidePanel
+              liveMatch={liveMatches[1]||null}
+              timeline={liveMatches[1] ? (timelines[liveMatches[1].mk]||[]) : []}
+              lineup={liveMatches[1] ? lineups[liveMatches[1].mk] : null}
+            />
+          </>
+        ) : (
+          visible.map(({ round:[name,ms], idx })=>(
+            <RoundBlock
+              key={name}
+              roundName={name}
+              ms={ms}
+              highlight={idx===activeIdx}
+              dayOffset={idx-activeIdx}
+              showDetails={idx===activeIdx || idx===activeIdx-1}
+              fifaMap={fifaMap}
+              statusMap={idx<=activeIdx ? statusMap : undefined}
+              timelines={timelines}
+              rankings={rankings}
+            />
+          ))
+        )}
+      </div>
     </div>
   )
 }
