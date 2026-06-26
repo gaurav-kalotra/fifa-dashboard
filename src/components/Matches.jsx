@@ -85,68 +85,50 @@ function parseTimeline(summary, homeTeamId, awayTeamId) {
 }
 
 // Position row: 0=FWD 1=MID 2=DEF 3=GK (top→bottom on pitch)
-const POS_ROW = {
-  GK:3, G:3,
-  CB:2, CD:2, LB:2, RB:2, LWB:2, RWB:2, SW:2, D:2, WB:2,
-  DM:1, CDM:1, CM:1, CAM:1, AM:1, LM:1, RM:1, M:1, LW:1, RW:1,
-  ST:0, CF:0, SS:0, FW:0, F:0, ATT:0,
+// ESPN uses compound abbreviations like CD-L, CF-R, CM-L — split on '-' first
+const POS_ROW_BASE = {
+  G:3, GK:3,
+  CD:2, CB:2, LB:2, RB:2, LWB:2, RWB:2, SW:2, D:2, WB:2,
+  CM:1, DM:1, CDM:1, CAM:1, AM:1, LM:1, RM:1, M:1, LW:1, RW:1, WM:1,
+  ST:0, CF:0, SS:0, FW:0, F:0, ATT:0, LF:0, RF:0,
 }
-function posRow(pos = '') { return POS_ROW[pos.toUpperCase()] ?? 1 }
+function posRow(pos = '') {
+  const base = pos.toUpperCase().split('-')[0]
+  return POS_ROW_BASE[base] ?? 1
+}
 
-function parseLineup(summary) {
-  const comp = summary?.header?.competitions?.[0]
+function parseLineup(summary, eventId) {
   const result = { home:[], away:[], homeCoach:'', awayCoach:'', homeFormation:'', awayFormation:'' }
 
-  // Primary: competition lineups array
-  for (const lineup of comp?.lineups || []) {
-    const side = lineup.homeAway
-    if (side === 'home') result.homeFormation = lineup.formation || ''
-    else result.awayFormation = lineup.formation || ''
-    const players = (lineup.athletes || [])
-      .filter(a => a.starter !== false)
-      .map(a => ({
-        id: a.athlete?.id,
-        name: a.athlete?.shortName || a.athlete?.displayName || '',
-        jersey: a.jersey || a.athlete?.jersey || '',
-        pos: a.position?.abbreviation || a.athlete?.position?.abbreviation || '',
-        photo: a.athlete?.headshot?.href
-          || (a.athlete?.id ? `https://a.espncdn.com/i/headshots/soccer/players/full/${a.athlete.id}.png` : null),
-        formationPlace: a.formationPlace || 99,
-        rating: a.rating != null ? Number(a.rating).toFixed(1) : null,
-      }))
+  // ESPN WC2026: lineup data is in summary.rosters[], not header.competitions[0].lineups
+  for (const roster of summary?.rosters || []) {
+    const side = roster.homeAway
+    if (side === 'home') result.homeFormation = roster.formation || ''
+    else result.awayFormation = roster.formation || ''
+
+    const players = (roster.roster || [])
+      .filter(p => p.starter)
+      .map(p => {
+        const aid = p.athlete?.id
+        const headshot = aid ? `https://a.espncdn.com/i/headshots/soccer/players/full/${aid}.png` : null
+        const jerseyImg = aid && eventId
+          ? `https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/${eventId}/athletes/${aid}/jersey.png?darkMode=false`
+          : null
+        return {
+          id: aid,
+          name: p.athlete?.shortName || p.athlete?.displayName || '',
+          jersey: p.jersey || '',
+          pos: p.position?.abbreviation || '',
+          photo: headshot,
+          jerseyImg,
+          formationPlace: parseInt(p.formationPlace) || 99,
+          rating: null,
+        }
+      })
       .sort((a, b) => a.formationPlace - b.formationPlace)
+
     if (side === 'home') result.home = players
     else result.away = players
-  }
-
-  // Fallback: boxscore starters
-  if (!result.home.length) {
-    for (const team of summary?.boxscore?.players || []) {
-      const side = team.homeAway
-      const players = (team.statistics?.[0]?.athletes || [])
-        .filter(a => a.starter)
-        .map(a => ({
-          id: a.athlete?.id,
-          name: a.athlete?.shortName || a.athlete?.displayName || '',
-          jersey: a.athlete?.jersey || '',
-          pos: a.position || a.athlete?.position?.abbreviation || '',
-          photo: a.athlete?.headshot?.href
-            || (a.athlete?.id ? `https://a.espncdn.com/i/headshots/soccer/players/full/${a.athlete.id}.png` : null),
-          formationPlace: a.formationPlace || 99,
-          rating: a.rating != null ? Number(a.rating).toFixed(1) : null,
-        }))
-      if (side === 'home') result.home = players
-      else result.away = players
-    }
-  }
-
-  // Coaches
-  for (const competitor of comp?.competitors || []) {
-    const coaches = competitor.team?.coaches || []
-    const hc = coaches.find(c => c.position?.name?.toLowerCase().includes('head')) || coaches[0]
-    const name = hc?.athlete?.displayName || ''
-    if (competitor.homeAway === 'home') result.homeCoach = name
-    else result.awayCoach = name
   }
 
   return result
@@ -254,13 +236,20 @@ function RoundBlock({ roundName, ms, highlight, showDetails, espnMap, statusMap,
 const ROW_Y = [13, 37, 62, 85] // FWD, MID, DEF, GK (% from top)
 
 function PitchPlayer({ player, x, y }) {
-  const [imgFailed, setImgFailed] = useState(false)
+  const [photoState, setPhotoState] = useState('headshot') // headshot → jersey → none
   const jerseyName = player.name ? player.name.split(' ').slice(-1)[0] : player.jersey
+
+  const src = photoState === 'headshot' ? player.photo
+             : photoState === 'jersey'  ? player.jerseyImg
+             : null
+
+  const onErr = () => setPhotoState(s => s === 'headshot' ? 'jersey' : 'none')
+
   return (
     <div className="mx-pp" style={{ left:`${x}%`, top:`${y}%` }}>
       <div className="mx-pp-photo">
-        {player.photo && !imgFailed
-          ? <img src={player.photo} alt="" onError={() => setImgFailed(true)} className="mx-pp-img" />
+        {src
+          ? <img src={src} alt="" onError={onErr} className="mx-pp-img" />
           : <span className="mx-pp-num-badge">{player.jersey}</span>}
       </div>
       {player.rating && <span className="mx-pp-rating">{player.rating}</span>}
@@ -415,7 +404,7 @@ export default function Matches({ matches, groups }) {
             const r2 = await fetch(ESPN_SUMMARY(ev.id))
             const d2 = await r2.json()
             newTimelines[ev.id] = parseTimeline(d2, homeComp?.team?.id, awayComp?.team?.id)
-            newLineups[ev.id]   = parseLineup(d2)
+            newLineups[ev.id]   = parseLineup(d2, ev.id)
           } catch { newTimelines[ev.id] = [] }
         }))
 
