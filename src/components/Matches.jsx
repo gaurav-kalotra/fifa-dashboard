@@ -121,11 +121,21 @@ function parseFifaLineup(data) {
     if (!td) continue
     const hc = (td.Coaches || []).find(c => c.Role === 1) || td.Coaches?.[0]
     const allP = td.Players || []
-    const used = allP.filter(p => p.Status === 1)
-    const players = (used.length > 0 ? used : allP.filter(p => p.Status <= 2).slice(0, 11)).map(p => ({
+
+    // FormationPlace 1-11 = starting XI regardless of current match status (subbed out players
+    // change their Status mid-match but keep their FormationPlace)
+    let starters = allP.filter(p => p.FormationPlace >= 1 && p.FormationPlace <= 11)
+    // Fallback: Status 1=active, 2=subbed-out, 3=came-on — take active+subbed-out to get original XI
+    if (starters.length < 8) starters = allP.filter(p => p.Status === 1 || p.Status === 2)
+    // Last resort: any player, sorted by shirt number
+    if (starters.length < 8) starters = [...allP].sort((a,b)=>(a.ShirtNumber||99)-(b.ShirtNumber||99))
+    starters = starters.slice(0, 11)
+
+    const players = starters.map(p => ({
       id: p.IdPlayer, name: p.ShortName?.[0]?.Description || p.PlayerName?.[0]?.Description || '',
       jersey: String(p.ShirtNumber ?? ''), pos: FIFA_POS_ABBR[p.Position] || 'M',
-      photo: p.PlayerPicture?.PictureUrl || null, jerseyImg: null, formationPlace: 99, rating: null,
+      photo: p.PlayerPicture?.PictureUrl || null, jerseyImg: null,
+      formationPlace: p.FormationPlace || 99, rating: null,
     }))
     if (side === 'home') { result.home = players; result.homeFormation = td.Tactics || ''; result.homeCoach = hc?.Name?.[0]?.Description || '' }
     else                 { result.away = players; result.awayFormation = td.Tactics || ''; result.awayCoach = hc?.Name?.[0]?.Description || '' }
