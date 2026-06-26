@@ -2,7 +2,13 @@ import { useMemo, useState, useEffect, useRef } from 'react'
 import { ab, flagUrl, buildTeamStatusMap } from '../utils'
 
 const ESPN_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
-const ESPN_SUMMARY = id => `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${id}`
+const ESPN_SUMMARY    = id => `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${id}`
+
+const FIFA_SEASON     = '285023'
+const FIFA_LIVE_LIST  = `https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=${FIFA_SEASON}&language=en&matchStatus=3&count=20`
+const FIFA_LIVE       = (stageId, matchId) => `https://api.fifa.com/api/v3/live/football/17/${FIFA_SEASON}/${stageId}/${matchId}?language=en`
+// FIFA pos integer → pitch row (0=FWD 1=MID 2=DEF 3=GK)
+const FIFA_POS_ABBR   = { 0:'GK', 1:'D', 2:'M', 3:'F' }
 
 function normalTeam(n = '') {
   return n.toLowerCase()
@@ -95,6 +101,31 @@ const POS_ROW_BASE = {
 function posRow(pos = '') {
   const base = pos.toUpperCase().split('-')[0]
   return POS_ROW_BASE[base] ?? 1
+}
+
+function parseFifaLineup(data) {
+  const result = { home:[], away:[], homeCoach:'', awayCoach:'', homeFormation:'', awayFormation:'' }
+  for (const [side, td] of [['home', data?.HomeTeam], ['away', data?.AwayTeam]]) {
+    if (!td) continue
+    const formation = td.Tactics || ''
+    const hc = (td.Coaches || []).find(c => c.Role === 1) || td.Coaches?.[0]
+    const coach = hc?.Name?.[0]?.Description || ''
+    const players = (td.Players || [])
+      .filter(p => p.Status === 1)
+      .map(p => ({
+        id: p.IdPlayer,
+        name: p.ShortName?.[0]?.Description || p.PlayerName?.[0]?.Description || '',
+        jersey: String(p.ShirtNumber ?? ''),
+        pos: FIFA_POS_ABBR[p.Position] || 'M',
+        photo: p.PlayerPicture?.PictureUrl || null,
+        jerseyImg: null,
+        formationPlace: 99,
+        rating: null,
+      }))
+    if (side === 'home') { result.home = players; result.homeFormation = formation; result.homeCoach = coach }
+    else                 { result.away = players; result.awayFormation = formation; result.awayCoach = coach }
+  }
+  return result
 }
 
 function parseLineup(summary, eventId) {
@@ -245,6 +276,10 @@ function PitchPlayer({ player, x, y }) {
 
   const onErr = () => setPhotoState(s => s === 'headshot' ? 'jersey' : 'none')
 
+  const ratingClass = player.rating
+    ? +player.rating >= 7.5 ? 'r-great' : +player.rating >= 6.5 ? 'r-ok' : 'r-bad'
+    : null
+
   return (
     <div className="mx-pp" style={{ left:`${x}%`, top:`${y}%` }}>
       <div className="mx-pp-photo">
@@ -252,10 +287,10 @@ function PitchPlayer({ player, x, y }) {
           ? <img src={src} alt="" onError={onErr} className="mx-pp-img" />
           : <span className="mx-pp-num-badge">{player.jersey}</span>}
       </div>
-      {player.rating && <span className="mx-pp-rating">{player.rating}</span>}
       <div className="mx-pp-label">
-        <span className="mx-pp-num">{player.jersey}</span>
+        <span className="mx-pp-num">#{player.jersey}</span>
         <span className="mx-pp-name">{jerseyName}</span>
+        {player.rating && <span className={`mx-pp-rating ${ratingClass}`}>{player.rating}</span>}
       </div>
     </div>
   )
@@ -395,7 +430,7 @@ export default function Matches({ matches, groups }) {
         const newTimelines = {}
         const newLineups   = {}
 
-        // Fetch timelines + lineups for live matches (re-fetched every poll)
+        // Fetch ESPN timelines + roster fallback for live matches
         await Promise.all(live.map(async ev => {
           try {
             const comp = ev.competitions?.[0]
@@ -404,9 +439,31 @@ export default function Matches({ matches, groups }) {
             const r2 = await fetch(ESPN_SUMMARY(ev.id))
             const d2 = await r2.json()
             newTimelines[ev.id] = parseTimeline(d2, homeComp?.team?.id, awayComp?.team?.id)
-            newLineups[ev.id]   = parseLineup(d2, ev.id)
+            newLineups[ev.id]   = parseLineup(d2, ev.id) // ESPN roster fallback
           } catch { newTimelines[ev.id] = [] }
         }))
+
+        // Fetch FIFA live data — better photos, coach, formation
+        try {
+          const fifaList = await fetch(FIFA_LIVE_LIST).then(r => r.json())
+          // Build lookup: sorted abbr pair → ESPN event ID
+          const abbrMap = {}
+          for (const ev of live) {
+            const comp = ev.competitions?.[0]
+            const h = comp?.competitors?.find(c => c.homeAway === 'home')?.team?.abbreviation?.toUpperCase()
+            const a = comp?.competitors?.find(c => c.homeAway === 'away')?.team?.abbreviation?.toUpperCase()
+            if (h && a) abbrMap[[h,a].sort().join('|')] = ev.id
+          }
+          await Promise.all((fifaList.Results || []).map(async fm => {
+            try {
+              const fd = await fetch(FIFA_LIVE(fm.IdStage, fm.IdMatch)).then(r => r.json())
+              const h = fd.HomeTeam?.Abbreviation?.toUpperCase()
+              const a = fd.AwayTeam?.Abbreviation?.toUpperCase()
+              const espnId = h && a ? abbrMap[[h,a].sort().join('|')] : null
+              if (espnId) newLineups[espnId] = parseFifaLineup(fd)
+            } catch {}
+          }))
+        } catch {}
 
         // Fetch timelines for newly completed matches (once only)
         const newlyCompleted = events.filter(

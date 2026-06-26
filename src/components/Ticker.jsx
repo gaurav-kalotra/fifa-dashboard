@@ -51,7 +51,12 @@ export default function Ticker({ matches, groups }) {
             try {
               const ar = await fetch(ESPN_ATHLETE(id))
               const ad = await ar.json()
-              return { name: ad.displayName || ad.fullName, goals: l.value }
+              return {
+                name: ad.displayName || ad.fullName || '',
+                goals: l.value,
+                jersey: ad.jersey || '',
+                photo: `https://a.espncdn.com/i/headshots/soccer/players/full/${id}.png`,
+              }
             } catch { return null }
           })
         )).filter(Boolean)
@@ -72,7 +77,12 @@ export default function Ticker({ matches, groups }) {
     })
 
     espnScorers.forEach(s => {
-      out.push({ icon: '🥅', ctx: 'GOLDEN BOOT', text: `${s.name} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`, type: 'stat' })
+      out.push({
+        icon: '🥅', ctx: 'GOLDEN BOOT',
+        text: `${s.name}${s.jersey ? ` #${s.jersey}` : ''} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
+        photo: s.photo,
+        type: 'stat',
+      })
     })
 
     for (const [g, entries] of Object.entries(groups || {})) {
@@ -131,7 +141,9 @@ export default function Ticker({ matches, groups }) {
         >
           {doubled.map((item, i) => (
             <span key={i} className={`ticker-item ${item.type}`}>
-              <span className="ticker-item-icon">{item.icon}</span>
+              {item.photo
+                ? <img src={item.photo} alt="" className="ticker-player-photo" onError={e=>{e.target.style.display='none'}} />
+                : <span className="ticker-item-icon">{item.icon}</span>}
               <span className="ticker-ctx">{item.ctx}</span>
               {item.text}
               <span className="ticker-sep">◆</span>

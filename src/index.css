@@ -787,6 +787,10 @@ body.tv-mode { overflow: hidden; }
 .ticker-item.danger   { color:#fca5a5; text-shadow:0 0 10px rgba(248,113,113,0.4); }
 .ticker-item.record   { color:#fbbf24; text-shadow:0 0 16px rgba(251,191,36,0.5); }
 .ticker-item-icon { font-size:1.45vh; line-height:1; flex-shrink:0; }
+.ticker-player-photo {
+  width:2.4vh; height:2.4vh; border-radius:50%; object-fit:cover; object-position:top;
+  border:1px solid rgba(255,255,255,.25); flex-shrink:0; background:rgba(255,255,255,.1);
+}
 .ticker-ctx {
   font-family:'Oswald',system-ui,sans-serif; font-size:1.05vh;
   color:rgba(251,191,36,0.6); letter-spacing:.07em;
@@ -1149,22 +1153,25 @@ body.tv-mode { overflow: hidden; }
 .mx-pp-num-badge {
   font-family:'Space Mono',monospace; font-size:1.2vh; color:#fff; font-weight:700;
 }
-.mx-pp-rating {
-  font-family:'Space Mono',monospace; font-size:.65vh; color:#fbbf24;
-  background:rgba(0,0,0,.65); border-radius:2px; padding:0 2px; margin-top:1px;
-}
 .mx-pp-label {
-  display:flex; align-items:center; gap:2px;
-  background:rgba(0,0,0,.55); border-radius:3px; padding:0 3px;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  background:rgba(0,0,0,.6); border-radius:3px; padding:1px 4px;
 }
 .mx-pp-num {
-  font-family:'Space Mono',monospace; font-size:.6vh; color:rgba(255,255,255,.55);
+  font-family:'Space Mono',monospace; font-size:.7vh; color:rgba(255,255,255,.55); line-height:1;
 }
 .mx-pp-name {
-  font-family:'Inter',system-ui,sans-serif; font-size:.72vh; font-weight:600; color:#fff;
-  text-shadow:0 1px 3px rgba(0,0,0,.9); white-space:nowrap;
-  max-width:5vw; overflow:hidden; text-overflow:ellipsis;
+  font-family:'Inter',system-ui,sans-serif; font-size:.9vh; font-weight:700; color:#fff;
+  text-shadow:0 1px 4px rgba(0,0,0,.95); white-space:nowrap;
+  max-width:5.5vw; overflow:hidden; text-overflow:ellipsis; line-height:1.1;
 }
+.mx-pp-rating {
+  font-family:'Space Mono',monospace; font-size:.75vh; font-weight:700;
+  border-radius:2px; padding:0 3px; line-height:1.3;
+}
+.mx-pp-rating.r-great { color:#4ade80; background:rgba(74,222,128,.18); }
+.mx-pp-rating.r-ok    { color:#fbbf24; background:rgba(251,191,36,.18); }
+.mx-pp-rating.r-bad   { color:#f87171; background:rgba(248,113,113,.18); }
 
 /* No lineup / coach */
 .mx-no-lineup {
