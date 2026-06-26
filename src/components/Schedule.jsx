@@ -29,6 +29,7 @@ function Flag({ name, cls = 'sch-flag' }) {
 function groupOf(m) { return m?.group?.replace(/^Group\s+/i, '').toUpperCase() || '' }
 
 // Build winner/runner-up slot map from R32 match data
+// openfootball uses codes: "1A" = Winner Group A, "2B" = Runner-up Group B
 function buildGroupToSlot(byNum) {
   const winSlot = {}
   const rupSlot = {}
@@ -37,8 +38,8 @@ function buildGroupToSlot(byNum) {
     if (!m) continue
     for (const t of [m.team1, m.team2]) {
       if (!t) continue
-      const w = t.match(/Winner\s+Group\s+([A-L])/i)
-      const r = t.match(/Runner.up\s+Group\s+([A-L])/i)
+      const w = t.match(/^1([A-L])$/i)
+      const r = t.match(/^2([A-L])$/i)
       if (w) winSlot[w[1].toUpperCase()] = num
       if (r) rupSlot[r[1].toUpperCase()] = num
     }
@@ -254,7 +255,7 @@ const ROUND_DATES = [
 
 const LEFT_GROUPS  = 'ABCDEF'.split('')
 const RIGHT_GROUPS = 'GHIJKL'.split('')
-const PHASE_MS = 2500 // ms each win/lose phase is shown
+const PHASE_MS = 6000 // 2 slow pulses × 3s each before switching
 
 // ── Main export ───────────────────────────────────────────────
 export default function Schedule({ groups, matches }) {

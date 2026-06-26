@@ -79,8 +79,8 @@ export default function App() {
       return m.date === today && m.group && 'GHIJKL'.includes(g) && !m.score?.ft
     }).length
     const pairs = Math.max(leftPairs, rightPairs)
-    // 2 phases × 2.5s each per pair, plus 5s buffer, min 30s
-    fixtureDurRef.current = Math.max(30_000, pairs * 2 * 2500 + 5_000)
+    // 2 phases × 6s each per pair, plus 6s buffer, min 30s
+    fixtureDurRef.current = Math.max(30_000, pairs * 2 * 6000 + 6_000)
   }, [matches, isTV])
 
   useEffect(() => {

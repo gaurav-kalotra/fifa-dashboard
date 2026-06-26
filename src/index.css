@@ -1094,6 +1094,10 @@ body.tv-mode { overflow: hidden; }
   display:flex; flex-direction:column; align-items:center; gap:1px;
   margin-top:2px;
 }
+.mx-match-group {
+  font-family:'Oswald',system-ui,sans-serif; font-size:.8vh;
+  color:rgba(255,255,255,.3); letter-spacing:.1em; text-transform:uppercase; line-height:1;
+}
 .mx-match-time {
   font-family:'Space Mono',monospace; font-size:1.05vh;
   color:#fbbf24; line-height:1;
@@ -1428,9 +1432,9 @@ body.tv-mode { overflow: hidden; }
   0%,20%,100% { background:rgba(139,0,0,.0); box-shadow:none; }
   50%          { background:rgba(139,0,0,.22); box-shadow:inset 0 0 0 1.5px rgba(255,50,50,.7), 0 0 14px rgba(255,50,50,.25); }
 }
-.sch-spot-green { animation:sch-spot-green-pulse 1.6s ease-in-out infinite; }
-.sch-spot-red   { animation:sch-spot-red-pulse   1.6s ease-in-out infinite; }
-.sch-spot-elim  { animation:sch-spot-elim-pulse  1.0s ease-in-out infinite; }
+.sch-spot-green { animation:sch-spot-green-pulse 3s ease-in-out infinite; }
+.sch-spot-red   { animation:sch-spot-red-pulse   3s ease-in-out infinite; }
+.sch-spot-elim  { animation:sch-spot-elim-pulse  2s ease-in-out infinite; }
 
 /* Bracket slot win (green) / lose (red) / elimination (dramatic) spotlight */
 @keyframes bk-win-pulse {
@@ -1445,9 +1449,9 @@ body.tv-mode { overflow: hidden; }
   0%,100% { border-color:rgba(220,30,30,.2); box-shadow:none; background:rgba(3,6,18,.52); }
   50%      { border-color:rgba(255,0,0,.95); box-shadow:0 0 22px 5px rgba(255,30,30,.4), inset 0 0 12px rgba(255,0,0,.2); background:rgba(60,0,0,.35); }
 }
-.bk-slot.bk-win-spot  { animation:bk-win-pulse  1.6s ease-in-out infinite; }
-.bk-slot.bk-lose-spot { animation:bk-lose-pulse 1.6s ease-in-out infinite; }
-.bk-slot.bk-elim-spot { animation:bk-elim-pulse 1.0s ease-in-out infinite; }
+.bk-slot.bk-win-spot  { animation:bk-win-pulse  3s ease-in-out infinite; }
+.bk-slot.bk-lose-spot { animation:bk-lose-pulse 3s ease-in-out infinite; }
+.bk-slot.bk-elim-spot { animation:bk-elim-pulse 2s ease-in-out infinite; }
 
 /* Today's live bracket match — blue pulse */
 @keyframes bk-today-pulse {

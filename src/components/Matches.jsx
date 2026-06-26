@@ -386,7 +386,8 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
         {/* FT label — current day completed only */}
         {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
 
-        {/* Time above VS — upcoming/future only */}
+        {/* Group label + time above VS — today's upcoming only */}
+        {!isLive && !played && m.group && dayOffset === 0 && <span className="mx-match-group">{m.group}</span>}
         {!isLive && !played && localTime && <span className="mx-match-time">{localTime}</span>}
 
         {/* Prediction bar ABOVE VS — future card upcoming only */}
