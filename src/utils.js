@@ -13,8 +13,9 @@ const ISO2 = {
   "England":"gb-eng","Croatia":"hr","Ghana":"gh","Panama":"pa",
 }
 
+const NAME_NORM = { "Türkiye": "Turkey", "Côte d'Ivoire": "Ivory Coast", "United States": "USA" }
 export const flagUrl = (name) => {
-  const code = ISO2[name]
+  const code = ISO2[NAME_NORM[name] || name]
   return code ? `https://flagcdn.com/w40/${code}.png` : null
 }
 
@@ -59,6 +60,33 @@ export function computeGroups(matches) {
     )
   }
   return ranked
+}
+
+export function teamStatus(entries, i) {
+  const e = entries[i]
+  const groupDone = entries.every(x => x.p === 3)
+  if (groupDone) {
+    if (i <= 1) return 'qual'
+    if (i === 2) return 'tbd'
+    return 'elim'
+  }
+  const maxPts = e.pts + (3 - e.p) * 3
+  const second = entries[1]
+  if (i >= 2 && maxPts < (second?.pts ?? 0)) return 'elim'
+  if (i <= 1) {
+    const third = entries[2]
+    const thirdMax = (third?.pts ?? 0) + (3 - (third?.p ?? 0)) * 3
+    if (thirdMax < e.pts) return 'qual'
+  }
+  return 'tbd'
+}
+
+export function buildTeamStatusMap(groups) {
+  const map = {}
+  for (const entries of Object.values(groups)) {
+    entries.forEach((e, i) => { map[e.t] = teamStatus(entries, i) })
+  }
+  return map
 }
 
 export function buildResolver(rankedGroups, matches) {

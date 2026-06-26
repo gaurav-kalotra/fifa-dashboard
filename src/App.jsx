@@ -128,7 +128,7 @@ export default function App() {
         <div className="tv-progress" key={tab} />
 
         <div className="tv-content" key={`c-${tab}`}>
-          {tab === 'matches' && <Matches matches={matches} />}
+          {tab === 'matches' && <Matches matches={matches} groups={groups} />}
           {tab === 'schedule' && <Schedule groups={groups} matches={matches} />}
         </div>
 

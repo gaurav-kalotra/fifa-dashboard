@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ab, flagUrl, buildResolver } from '../utils'
+import { ab, flagUrl, buildResolver, teamStatus } from '../utils'
 
 // ── Bracket structure for WC2026 ──────────────────────────────
 // Left half → SF M101 → Final M104
@@ -23,25 +23,6 @@ function Flag({ name, cls = 'sch-flag' }) {
   return url
     ? <img src={url} alt={ab(name)} className={cls} onError={e => { e.target.style.display = 'none' }} />
     : null
-}
-
-function teamStatus(entries, i) {
-  const e = entries[i]
-  const groupDone = entries.every(x => x.p === 3)
-  if (groupDone) {
-    if (i <= 1) return 'qual'
-    if (i === 2) return 'tbd'   // WC2026: best 3rd-place teams also advance
-    return 'elim'
-  }
-  const maxPts = e.pts + (3 - e.p) * 3
-  const second = entries[1]
-  if (i >= 2 && maxPts < (second?.pts ?? 0)) return 'elim'
-  if (i <= 1) {
-    const third = entries[2]
-    const thirdMax = (third?.pts ?? 0) + (3 - (third?.p ?? 0)) * 3
-    if (thirdMax < e.pts) return 'qual'
-  }
-  return 'tbd'
 }
 
 // ── Compact group table (full stats) ─────────────────────────
