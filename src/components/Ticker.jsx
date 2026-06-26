@@ -6,7 +6,6 @@ const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/
 const ESPN_ATHLETE = id =>
   `https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/${id}?lang=en&region=us`
 
-// Build last-name index for fuzzy matching
 const lastNameIdx = {}
 for (const key of Object.keys(playerManifest)) {
   const ln = key.split(' ').pop().toLowerCase()
@@ -20,15 +19,12 @@ function stripDiacritics(str) {
 function localPhoto(rawName) {
   if (!rawName) return null
   const name = stripDiacritics(rawName)
-  // 1. Exact match
   if (playerManifest[name]) return playerManifest[name]
-  // 2. "FirstInitial. Rest" abbreviated form
   const parts = name.split(' ')
   if (parts.length >= 2) {
     const abbr = `${parts[0][0]}. ${parts.slice(1).join(' ')}`
     if (playerManifest[abbr]) return playerManifest[abbr]
   }
-  // 3. Last-name fallback (picks first match, good enough for golden boot)
   const ln = parts[parts.length - 1].toLowerCase()
   const candidates = lastNameIdx[ln] || []
   if (candidates.length === 1) return playerManifest[candidates[0]]
@@ -40,23 +36,42 @@ function localPhoto(rawName) {
   return null
 }
 
-async function fetchPlayerPhoto(rawName) {
-  return localPhoto(rawName)
-}
+// Award contenders (pre-tournament editorial picks)
+const GOLDEN_BALL = [
+  { name: 'Lionel Messi',       team: 'Argentina' },
+  { name: 'Kylian Mbappé',      team: 'France'    },
+  { name: 'Erling Haaland',     team: 'Norway'    },
+  { name: 'Vinícius Júnior',    team: 'Brazil'    },
+  { name: 'Jude Bellingham',    team: 'England'   },
+]
 
-const FACTS = [
-  { icon: '🏟️', ctx: 'WC2026',  text: '104 matches across 16 cities in USA, Canada & Mexico' },
+const GOLDEN_GLOVE = [
+  { name: 'Emiliano Martínez',  team: 'Argentina'   },
+  { name: 'Alisson Becker',     team: 'Brazil'      },
+  { name: 'Thibaut Courtois',   team: 'Belgium'     },
+  { name: 'Mike Maignan',       team: 'France'      },
+  { name: 'Yann Sommer',        team: 'Switzerland' },
+]
+
+const BEST_YOUNG = [
+  { name: 'Lamine Yamal',   team: 'Spain'   },
+  { name: 'Endrick',        team: 'Brazil'  },
+  { name: 'Florian Wirtz',  team: 'Germany' },
+  { name: 'Kobbie Mainoo',  team: 'England' },
+  { name: 'Mathys Tel',     team: 'France'  },
+]
+
+const HISTORY = [
   { icon: '👑', ctx: 'HISTORY', text: 'Argentina are the defending World Cup champions (Qatar 2022)' },
-  { icon: '⭐', ctx: 'WC2026',  text: '48 teams — the largest FIFA World Cup in history' },
-  { icon: '🌎', ctx: 'WC2026',  text: 'First World Cup ever co-hosted by 3 nations simultaneously' },
-  { icon: '🏆', ctx: 'TRIVIA',  text: 'FIFA World Cup Trophy is 18-carat gold, weighing 6.175 kg' },
+  { icon: '🏆', ctx: 'TRIVIA',  text: 'FIFA World Cup Trophy is 18-carat gold — 36 cm tall, 6.175 kg' },
   { icon: '🇧🇷', ctx: 'HISTORY', text: 'Brazil hold the record with 5 World Cup titles' },
-  { icon: '📅', ctx: 'WC2026',  text: 'Tournament runs June 11 – July 19, 2026' },
-  { icon: '🏟️', ctx: 'VENUES',  text: 'MetLife Stadium (NY/NJ) hosts the Final on July 19' },
-  { icon: '🌐', ctx: 'WC2026',  text: '12 groups of 4 — top 2 plus 8 best 3rd-place teams advance' },
-  { icon: '⚽', ctx: 'HISTORY', text: 'Germany & Italy have each lifted the trophy 4 times' },
-  { icon: '🏙️', ctx: 'WC2026',  text: 'Vancouver, Toronto, Boston among host cities for first time' },
-  { icon: '📺', ctx: 'WC2026',  text: 'WC2026 expected to draw over 5 billion global viewers' },
+  { icon: '⚽', ctx: 'HISTORY',  text: 'Germany & Italy have each lifted the trophy 4 times' },
+  { icon: '🐐', ctx: 'HISTORY',  text: 'Messi won the 2022 Golden Ball — defending his crown in 2026' },
+  { icon: '🔥', ctx: 'HISTORY',  text: 'France chasing back-to-back titles — last done by Brazil in 1958 & 1962' },
+  { icon: '🌍', ctx: 'HISTORY',  text: 'Morocco made history as the first African semi-finalists (Qatar 2022)' },
+  { icon: '🎯', ctx: 'HISTORY',  text: 'Ronaldo aiming to score in a record 6th consecutive World Cup' },
+  { icon: '🧤', ctx: 'HISTORY',  text: 'Emiliano Martínez won the Golden Glove at Qatar 2022' },
+  { icon: '🌟', ctx: 'HISTORY',  text: 'Lamine Yamal — youngest player ever at a Euros (2024), now at a World Cup' },
 ]
 
 function getAthleteId(ref) {
@@ -73,6 +88,17 @@ function shuffle(arr, seed) {
   return a
 }
 
+function awardItem(rank, player, ctx, type) {
+  return {
+    ctx,
+    ctxAward: true,
+    text: `${rank}. ${player.name}`,
+    photo: localPhoto(player.name),
+    teams: [player.team],
+    type,
+  }
+}
+
 export default function Ticker({ matches, groups }) {
   const [espnScorers, setEspnScorers] = useState([])
 
@@ -82,22 +108,16 @@ export default function Ticker({ matches, groups }) {
         const r = await fetch(ESPN_LEADERS)
         const d = await r.json()
         const goals = d.categories?.find(c => c.name === 'goalsLeaders')
-        const top6  = (goals?.leaders || []).slice(0, 10)
+        const top10 = (goals?.leaders || []).slice(0, 10)
         const scorers = (await Promise.all(
-          top6.map(async l => {
+          top10.map(async l => {
             const id = getAthleteId(l.athlete?.['$ref'])
             if (!id) return null
             try {
               const ar = await fetch(ESPN_ATHLETE(id))
               const ad = await ar.json()
               const name = ad.displayName || ad.fullName || ''
-              const photo = name ? await fetchPlayerPhoto(name) : null
-              return {
-                name,
-                goals: l.value,
-                jersey: ad.jersey || '',
-                photo,
-              }
+              return { name, goals: l.value, photo: localPhoto(name), team: ad.team?.displayName || '' }
             } catch { return null }
           })
         )).filter(Boolean)
@@ -111,59 +131,67 @@ export default function Ticker({ matches, groups }) {
 
   const items = useMemo(() => {
     const played = matches.filter(m => m.score?.ft)
-    const other = []
+    const seed = played.length
 
-    matches.filter(m => !m.score?.ft && m.group).slice(0, 6).forEach(m => {
-      other.push({ icon: '🗓️', ctx: m.group?.replace('Group ','GRP ') || '', text: `${ab(m.team1)} vs ${ab(m.team2)}`, type: 'upcoming', teams: [m.team1, m.team2] })
-    })
+    // Award blocks — each scrolls consecutively
+    const goldenBallBlock  = GOLDEN_BALL.map((p, i) => awardItem(i + 1, p, '🏅', 'stat'))
+    const goldenGloveBlock = GOLDEN_GLOVE.map((p, i) => awardItem(i + 1, p, '🧤', 'stat'))
+    const bestYoungBlock   = BEST_YOUNG.map((p, i) => awardItem(i + 1, p, '🌟', 'stat'))
 
-    for (const [g, entries] of Object.entries(groups || {})) {
-      if (!entries?.length) continue
-      if (entries[1]?.pts >= 6)
-        other.push({ icon: '✅', ctx: `GROUP ${g}`, text: `${ab(entries[0].t)} & ${ab(entries[1].t)} advance to Round of 32`, type: 'qual', teams: [entries[0].t, entries[1].t] })
-      entries.filter(e => e.p >= 2 && e.pts === 0).forEach(e =>
-        other.push({ icon: '⚠️', ctx: `GROUP ${g}`, text: `${ab(e.t)} need a win to stay alive`, type: 'danger', teams: [e.t] })
-      )
-    }
+    const goldenBootBlock = espnScorers.map((s, i) => ({
+      ctx: '🥾', ctxAward: true,
+      text: `${i + 1}. ${s.name} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
+      photo: s.photo,
+      teams: s.team ? [s.team] : [],
+      type: 'stat',
+    }))
+
+    // Filler: live stats + history (shuffled individually)
+    const filler = []
 
     const all = Object.values(groups || {}).flat()
     if (all.length) {
       const top = [...all].sort((a, b) => b.gf - a.gf)[0]
-      if (top?.gf >= 4)
-        other.push({ icon: '⚡', ctx: 'ATTACK', text: `${ab(top.t)} lead the tournament with ${top.gf} goals scored`, type: 'stat', teams: [top.t] })
-      const def = [...all].filter(e => e.p > 0).sort((a, b) => a.ga - b.ga)[0]
-      if (def?.ga === 0 && def.p >= 2)
-        other.push({ icon: '🛡️', ctx: 'DEFENSE', text: `${ab(def.t)} – ${def.p} games, zero goals conceded`, type: 'stat', teams: [def.t] })
+      if (top?.gf >= 3)
+        filler.push({ icon: '⚡', ctx: 'ATTACK', text: `${ab(top.t)} lead all teams with ${top.gf} goals scored`, type: 'stat', teams: [top.t] })
+      const def = [...all].filter(e => e.p >= 2).sort((a, b) => a.ga - b.ga)[0]
+      if (def?.ga === 0)
+        filler.push({ icon: '🛡️', ctx: 'DEFENSE', text: `${ab(def.t)} — ${def.p} games played, yet to concede`, type: 'stat', teams: [def.t] })
     }
 
     if (played.length) {
       const big = [...played].sort((a, b) =>
-        Math.abs(b.score.ft[0]-b.score.ft[1]) - Math.abs(a.score.ft[0]-a.score.ft[1])
+        Math.abs(b.score.ft[0] - b.score.ft[1]) - Math.abs(a.score.ft[0] - a.score.ft[1])
       )[0]
       const diff = Math.abs(big.score.ft[0] - big.score.ft[1])
       if (diff >= 3) {
         const [s1, s2] = big.score.ft
-        other.push({ icon: '🔥', ctx: 'BIGGEST WIN', text: `${ab(big.team1)} ${s1}–${s2} ${ab(big.team2)}`, type: 'record', teams: [big.team1, big.team2] })
+        filler.push({ icon: '🔥', ctx: 'BIGGEST WIN', text: `${ab(big.team1)} ${s1}–${s2} ${ab(big.team2)}`, type: 'record', teams: [big.team1, big.team2] })
       }
     }
 
-    const shift = played.length % FACTS.length
-    other.push(...FACTS.slice(shift), ...FACTS.slice(0, shift))
+    filler.push(...HISTORY)
+    const shuffledFiller = shuffle(filler, seed)
 
-    // Scorers stay as a consecutive block at the top; rest is shuffled
-    const scorerItems = espnScorers.map((s, rank) => ({
-      icon: '🥅', ctx: '🥾', ctxBoot: true,
-      text: `${rank + 1}. ${s.name}${s.jersey ? ` #${s.jersey}` : ''} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
-      photo: s.photo,
-      type: 'stat',
-    }))
+    // Award groups in shuffled order, filler interleaved between them
+    const awardGroups = shuffle(
+      [goldenBallBlock, goldenBootBlock, goldenGloveBlock, bestYoungBlock].filter(g => g.length),
+      seed * 1.9
+    )
 
-    return [...scorerItems, ...shuffle(other, played.length)]
+    const result = []
+    const chunkSize = Math.ceil(shuffledFiller.length / (awardGroups.length + 1))
+    result.push(...shuffledFiller.slice(0, chunkSize))
+    awardGroups.forEach((group, i) => {
+      result.push(...group)
+      result.push(...shuffledFiller.slice((i + 1) * chunkSize, (i + 2) * chunkSize))
+    })
+
+    return result
   }, [matches, groups, espnScorers])
 
   if (!items.length) return null
 
-  // ~14s per item so each passes slowly enough to read comfortably
   const duration = Math.max(360, items.length * 22)
   const doubled = [...items, ...items]
 
@@ -182,7 +210,7 @@ export default function Ticker({ matches, groups }) {
           {doubled.map((item, i) => (
             <span key={i} className={`ticker-item ${item.type}`}>
               {item.photo
-                ? <img src={item.photo} alt="" className="ticker-player-photo" onError={e=>{e.target.style.display='none'}} />
+                ? <img src={item.photo} alt="" className="ticker-player-photo" onError={e => { e.target.style.display = 'none' }} />
                 : item.icon === '🏆'
                   ? <img src="/assets/wc-trophy2.png" alt="" className="ticker-trophy-icon" />
                   : <span className="ticker-item-icon">{item.icon}</span>}
@@ -190,7 +218,7 @@ export default function Ticker({ matches, groups }) {
                 const f = flagUrl(t)
                 return f ? <img key={t} src={f} alt={t} className="ticker-flag" /> : null
               })}
-              <span className={item.ctxBoot ? 'ticker-ctx ticker-boot-icon' : 'ticker-ctx'}>{item.ctx}</span>
+              <span className={item.ctxAward ? 'ticker-ctx ticker-award-icon' : 'ticker-ctx'}>{item.ctx}</span>
               {item.text}
               <span className="ticker-sep">◆</span>
             </span>

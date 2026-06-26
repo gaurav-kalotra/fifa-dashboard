@@ -590,8 +590,7 @@ body {
 }
 
 /* ── TV / Screensaver mode (?tv=1) ───────────────────── */
-body.tv-mode { overflow: hidden; cursor: none; }
-body.tv-mode * { cursor: none; }
+body.tv-mode { overflow: hidden; }
 
 /* ── Premium broadcast theme ──────────────────────────── */
 .tv-frame {
@@ -806,7 +805,7 @@ body.tv-mode * { cursor: none; }
   font-family:'Oswald',system-ui,sans-serif; font-size:1.05vh;
   color:rgba(251,191,36,0.6); letter-spacing:.07em;
 }
-.ticker-boot-icon { font-size:1.6vh; filter:sepia(1) saturate(6) hue-rotate(8deg) brightness(1.15); }
+.ticker-award-icon { font-size:1.6vh; filter:sepia(1) saturate(6) hue-rotate(8deg) brightness(1.15); }
 .ticker-sep { color:rgba(255,255,255,0.18); font-size:.8vh; padding:0 0.4vw; }
 
 /* Idle mode (no live games): bigger match event text in cards */

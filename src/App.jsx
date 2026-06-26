@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { computeGroups } from './utils'
 import SNAPSHOT from './data/snapshot'
 import Matches from './components/Matches'
@@ -46,7 +46,6 @@ export default function App() {
   const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
   const [matches, setMatches] = useState(SNAPSHOT.matches)
   const [dataStatus, setDataStatus] = useState('snapshot')
-  const cursorTimer = useRef(null)
 
   useEffect(() => {
     const load = async () => {
@@ -76,20 +75,8 @@ export default function App() {
       })
     }, TV_INTERVAL_MS)
 
-    const hide = () => {
-      document.body.style.cursor = 'none'
-      clearTimeout(cursorTimer.current)
-    }
-    const show = () => {
-      document.body.style.cursor = ''
-      clearTimeout(cursorTimer.current)
-      cursorTimer.current = setTimeout(hide, 3000)
-    }
-    hide()
-    document.addEventListener('mousemove', show)
     return () => {
       clearInterval(rotate)
-      document.removeEventListener('mousemove', show)
       document.body.classList.remove('tv-mode')
     }
   }, [])
