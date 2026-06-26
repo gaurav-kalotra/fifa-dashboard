@@ -1079,16 +1079,21 @@ body.tv-mode { overflow: hidden; }
 }
 .mx-live-progress {
   width:52px; height:3px; background:rgba(255,255,255,.08);
-  border-radius:2px; overflow:hidden; display:flex; justify-content:flex-start;
+  border-radius:2px; overflow:hidden; position:relative;
 }
-.mx-live-progress.h2 { justify-content:flex-end; }
 .mx-live-progress-fill {
-  height:100%;
-  background:linear-gradient(90deg, rgba(34,211,238,.85), rgba(251,191,36,.85));
-  border-radius:2px; transition:width 1s ease;
+  position:absolute; height:100%; width:45%;
+  background:linear-gradient(90deg, rgba(34,211,238,.5), rgba(34,211,238,.95), rgba(251,191,36,.95), rgba(34,211,238,.95), rgba(34,211,238,.5));
+  border-radius:2px;
+  animation:bar-bounce 2s ease-in-out infinite;
+}
+@keyframes bar-bounce {
+  0%, 100% { left:0; }
+  50%       { left:55%; }
 }
 .mx-live-progress.ht .mx-live-progress-fill {
-  width:100% !important; background:rgba(251,191,36,.9);
+  left:0 !important; width:100%; animation:none;
+  background:rgba(251,191,36,.85);
 }
 .mx-live-num {
   font-family:'Space Mono',monospace; font-size:3.2vh; font-weight:700;

@@ -112,14 +112,14 @@ function MatchRow({ m, isLive, showDetails, espnInfo }) {
       </div>
       <div className="mx-center">
         {isLive && <span className="mx-live-pip" />}
+        {isLive && espnInfo?.clock && (
+          <span className="mx-live-match-clock">{espnInfo.clock}'</span>
+        )}
         {played
           ? <span className="mx-score">{s1}–{s2}</span>
           : isLive && espnInfo?.liveScore
             ? <span className="mx-score mx-score-live">{espnInfo.liveScore[0]}–{espnInfo.liveScore[1]}</span>
             : <span className="mx-vs">vs</span>}
-        {isLive && espnInfo?.clock && (
-          <span className="mx-live-match-clock">{espnInfo.clock}'</span>
-        )}
         {!isLive && showDetails && (localTime || venue) && (
           <div className="mx-match-detail">
             {localTime && <span className="mx-match-time">{localTime}</span>}
@@ -164,13 +164,8 @@ function LiveMatchTile({ event, timeline }) {
   const home = comp?.competitors?.find(c => c.homeAway === 'home')
   const away = comp?.competitors?.find(c => c.homeAway === 'away')
   const clock = event.status?.displayClock || event.status?.type?.shortDetail || '?'
-  const period = event.status?.period ?? 1
   const detail = (event.status?.type?.shortDetail || '').toLowerCase()
   const isHT = detail.includes('half') || detail === 'ht'
-  const minVal = parseInt(clock) || 0
-  const barFill = isHT ? 100
-    : period === 1 ? Math.min(100, (minVal / 45) * 100)
-    : Math.min(100, ((minVal - 45) / 45) * 100)
 
   const homeScore = parseInt(home?.score ?? '0')
   const awayScore = parseInt(away?.score ?? '0')
@@ -197,8 +192,8 @@ function LiveMatchTile({ event, timeline }) {
         <div className="mx-live-goals">
           <span className={`mx-live-num${homeScore > awayScore ? ' lead' : ''}`}>{homeScore}</span>
           <div className="mx-live-center">
-            <div className={`mx-live-progress${period === 2 && !isHT ? ' h2' : ''}${isHT ? ' ht' : ''}`}>
-              <div className="mx-live-progress-fill" style={{ width: `${barFill}%` }} />
+            <div className={`mx-live-progress${isHT ? ' ht' : ''}`}>
+              <div className="mx-live-progress-fill" />
             </div>
             <span className="mx-live-clock">{clock}</span>
             <span className="mx-live-dash">—</span>
