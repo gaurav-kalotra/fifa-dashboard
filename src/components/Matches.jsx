@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { ab, flagUrl, buildTeamStatusMap } from '../utils'
+import { ab, flagUrl, buildTeamStatusMap, computeGroups } from '../utils'
 
 const ESPN_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
 const ESPN_SUMMARY    = id => `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${id}`
@@ -551,9 +551,19 @@ export default function Matches({ matches, groups }) {
     return () => clearInterval(iv)
   }, [])
 
+  // Augment static matches with ESPN-confirmed completions not yet in the feed
+  const augMatches = useMemo(() => matches.map(m => {
+    if (m.score?.ft) return m
+    const espn = espnMap[teamsKey(m.team1, m.team2)]
+    if (espn?.state === 'post' && espn?.postScore) {
+      return { ...m, score: { ...m.score, ft: espn.postScore } }
+    }
+    return m
+  }), [matches, espnMap])
+
   const { rounds, activeIdx } = useMemo(() => {
     const byRound = {}
-    for (const m of matches.filter(m => m.group)) {
+    for (const m of augMatches.filter(m => m.group)) {
       if (!byRound[m.round]) byRound[m.round] = []
       byRound[m.round].push(m)
     }
@@ -561,7 +571,7 @@ export default function Matches({ matches, groups }) {
     let activeIdx = rounds.findIndex(([, ms]) => ms.some(m => !m.score?.ft))
     if (activeIdx < 0) activeIdx = rounds.length - 1
     return { rounds, activeIdx }
-  }, [matches])
+  }, [augMatches])
 
   const visible = useMemo(() => {
     const out = []
@@ -571,7 +581,7 @@ export default function Matches({ matches, groups }) {
     return out
   }, [rounds, activeIdx])
 
-  const statusMap = useMemo(() => buildTeamStatusMap(groups || {}), [groups])
+  const statusMap = useMemo(() => buildTeamStatusMap(computeGroups(augMatches)), [augMatches])
 
   const hasLive = liveEvents.length > 0
   const liveCount = liveEvents.length
