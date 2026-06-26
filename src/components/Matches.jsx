@@ -211,7 +211,7 @@ function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
     <div className={`mx-row${played ? ' played' : ''}${isLive ? ' live' : ''}`}>
       <div className="mx-team-cell left">
         {url1 ? <img src={url1} alt={ab(m.team1)} className="mx-flag" onError={e => { e.target.style.display='none' }} /> : null}
-        <span className={`mx-name${win1 ? ' win' : ''} st-${statusMap?.[m.team1] || 'tbd'}`}>{m.team1}</span>
+        <span className={`mx-name${win1 ? ' win' : ''} st-${statusMap?.[m.team1] || 'tbd'}`}>{ab(m.team1)}</span>
         {homeEvents.length > 0 && (
           <div className="mx-row-events home">
             {homeEvents.map((e, i) => (
@@ -250,7 +250,7 @@ function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
             ))}
           </div>
         )}
-        <span className={`mx-name${win2 ? ' win' : ''} st-${statusMap?.[m.team2] || 'tbd'}`}>{m.team2}</span>
+        <span className={`mx-name${win2 ? ' win' : ''} st-${statusMap?.[m.team2] || 'tbd'}`}>{ab(m.team2)}</span>
         {url2 ? <img src={url2} alt={ab(m.team2)} className="mx-flag" onError={e => { e.target.style.display='none' }} /> : null}
       </div>
     </div>

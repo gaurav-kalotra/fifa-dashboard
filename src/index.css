@@ -1019,7 +1019,7 @@ body.tv-mode { overflow: hidden; }
 
 .mx-flag { width:24px; height:16px; object-fit:cover; border-radius:2px; border:1px solid rgba(255,255,255,.12); flex-shrink:0; }
 .mx-block.current .mx-flag { width:28px; height:18px; }
-.mx-name { font-family:'Oswald',system-ui,sans-serif; font-size:1.7vh; font-weight:600; color:rgba(255,255,255,.85); letter-spacing:.04em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mx-name { font-family:'Oswald',system-ui,sans-serif; font-size:1.7vh; font-weight:600; color:rgba(255,255,255,.85); letter-spacing:.06em; }
 .mx-block.current .mx-name { font-size:2.0vh; color:#fff; }
 .mx-name.st-qual, .mx-block.current .mx-name.st-qual { color:rgba(74,222,128,.9); }
 .mx-name.st-tbd,  .mx-block.current .mx-name.st-tbd  { color:rgba(251,191,36,.9); }
