@@ -41,9 +41,10 @@ function Stars() {
 }
 
 // Official WC2026 logo (trophy + mosaic 26 pattern) — confirmed 342KB PNG
-const WC_LOGO = 'https://1000logos.net/wp-content/uploads/2023/05/World-Cup-2026-Logo.png'
-// Real FIFA World Cup trophy photo (Wikimedia Commons, confirmed 200px)
-const WC_TROPHY = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/FIFA_World_Cup_Trophy_%28Ank_Kumar%2C_Infosys_Limited%29_01.jpg/250px-FIFA_World_Cup_Trophy_%28Ank_Kumar%2C_Infosys_Limited%29_01.jpg'
+// Official WC2026 transparent PNG logo (user-provided, confirmed 286KB)
+const WC_LOGO_PNG = 'https://city-png.b-cdn.net/preview/preview_public/uploads/preview/hd-official-fifa-world-cup-26-trophy-transparent-background-701751712076887htawzli3zs.png'
+// Background watermark — same logo, full Wikimedia emblem as fallback
+const WC_LOGO = WC_LOGO_PNG
 
 export default function App() {
   const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
@@ -114,7 +115,7 @@ export default function App() {
         <div className="tv-header">
           <div className="tv-header-center">
             <div className="tv-title-block">
-              <img src={WC_TROPHY} alt="WC Trophy" className="tv-trophy-img" />
+              <img src={WC_LOGO_PNG} alt="FIFA World Cup 2026" className="tv-trophy-img" />
               <div>
                 <div className="tv-title">FIFA World Cup 2026</div>
                 <div className="tv-subtitle"><span>UNITED STATES</span><span className="tv-sub-dot">·</span><span>CANADA</span><span className="tv-sub-dot">·</span><span>MEXICO</span></div>
