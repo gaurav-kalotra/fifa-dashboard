@@ -103,8 +103,10 @@ function parseFifaLineup(data) {
     const formation = td.Tactics || ''
     const hc = (td.Coaches || []).find(c => c.Role === 1) || td.Coaches?.[0]
     const coach = hc?.Name?.[0]?.Description || ''
-    const players = (td.Players || [])
-      .filter(p => p.Status === 1)
+    const allFifaPlayers = td.Players || []
+    const fifaStarters = allFifaPlayers.filter(p => p.Status === 1)
+    const fifaUsed = fifaStarters.length > 0 ? fifaStarters : allFifaPlayers.filter(p => p.Status <= 2).slice(0, 11)
+    const players = fifaUsed
       .map(p => ({
         id: p.IdPlayer,
         name: p.ShortName?.[0]?.Description || p.PlayerName?.[0]?.Description || '',
@@ -127,8 +129,9 @@ function parseLineup(summary, eventId) {
     const side = roster.homeAway
     if (side === 'home') result.homeFormation = roster.formation || ''
     else result.awayFormation = roster.formation || ''
-    const players = (roster.roster || [])
-      .filter(p => p.starter)
+    const allPlayers = roster.roster || []
+    const starters = allPlayers.filter(p => p.starter)
+    const players = (starters.length > 0 ? starters : allPlayers.filter(p => p.active).slice(0, 11))
       .map(p => {
         const aid = p.athlete?.id
         const headshot = aid ? `https://a.espncdn.com/i/headshots/soccer/players/full/${aid}.png` : null
@@ -220,18 +223,19 @@ function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
         )}
       </div>
       <div className="mx-center">
+        {isLive && <div className="mx-live-slider" />}
         {isLive && <span className="mx-live-pip" />}
         {isLive && espnInfo?.clock && (
           <span className="mx-live-match-clock">{espnInfo.clock}</span>
         )}
         {played
-          ? <span className="mx-score">{ds1}–{ds2}</span>
+          ? <><span className="mx-score">{ds1}–{ds2}</span><span className="mx-ft-badge">FT</span></>
           : isLive && espnInfo?.liveScore
             ? <span className="mx-score mx-score-live">{espnInfo.liveScore[0]}–{espnInfo.liveScore[1]}</span>
             : <span className="mx-vs">vs</span>}
-        {!isLive && showDetails && ((!played && localTime) || venue) && (
+        {!isLive && !played && showDetails && (localTime || venue) && (
           <div className="mx-match-detail">
-            {!played && localTime && <span className="mx-match-time">{localTime}</span>}
+            {localTime && <span className="mx-match-time">{localTime}</span>}
             {venue && <span className="mx-match-venue">{venue}</span>}
           </div>
         )}
@@ -278,7 +282,8 @@ function RoundBlock({ roundName, ms, highlight, showDetails, espnMap, statusMap,
 }
 
 // ── Pitch player marker ───────────────────────────────────────
-const ROW_Y = [13, 37, 62, 85] // FWD, MID, DEF, GK (% from top)
+const ROW_Y      = [13, 37, 62, 85] // FWD→MID→DEF→GK top-to-bottom (away: FWD near center)
+const ROW_Y_FLIP = [87, 63, 38, 15] // GK→DEF→MID→FWD top-to-bottom (home: FWD near center)
 
 function PitchPlayer({ player, x, y }) {
   const [photoState, setPhotoState] = useState('headshot')
@@ -321,7 +326,9 @@ function PitchPlayer({ player, x, y }) {
 }
 
 // Half-pitch: one team's formation within a half-width container
-function HalfPitch({ players }) {
+// flip=true mirrors vertically so home FWDs point toward the center divider
+function HalfPitch({ players, flip = false }) {
+  const rowY = flip ? ROW_Y_FLIP : ROW_Y
   const rows = [[],[],[],[]]
   for (const p of players) rows[Math.min(posRow(p.pos), 3)].push(p)
   return (
@@ -330,7 +337,7 @@ function HalfPitch({ players }) {
         row.map((p, i) => {
           const n = row.length
           const x = n <= 1 ? 50 : 10 + (i / (n - 1)) * 80
-          return <PitchPlayer key={p.id || `${ri}-${i}`} player={p} x={x} y={ROW_Y[ri]} />
+          return <PitchPlayer key={p.id || `${ri}-${i}`} player={p} x={x} y={rowY[ri]} />
         })
       )}
     </div>
@@ -385,8 +392,18 @@ function LiveMatchTile({ event, timeline, lineup }) {
             {lineup?.homeFormation && <span className="mx-side-fmtn">{lineup.homeFormation}</span>}
           </div>
           {homePlayers.length > 0
-            ? <HalfPitch players={homePlayers} />
-            : <div className="mx-no-lineup">Lineup pending</div>}
+            ? <HalfPitch players={homePlayers} flip />
+            : <div className="mx-no-lineup">
+                {homeEvts.length > 0
+                  ? homeEvts.map((e, i) => (
+                      <div key={i} className="mx-no-lineup-evt">
+                        <EventIcon type={e.type} />
+                        <span className="mx-nle-player">{e.player}</span>
+                        {e.min && <span className="mx-nle-min">{e.min}'</span>}
+                      </div>
+                    ))
+                  : <span className="mx-no-lineup-msg">⏱ Lineup pending</span>}
+              </div>}
           {lineup?.homeCoach && <div className="mx-side-coach">⚽ {lineup.homeCoach}</div>}
         </div>
 
@@ -401,7 +418,17 @@ function LiveMatchTile({ event, timeline, lineup }) {
           </div>
           {awayPlayers.length > 0
             ? <HalfPitch players={awayPlayers} />
-            : <div className="mx-no-lineup">Lineup pending</div>}
+            : <div className="mx-no-lineup">
+                {awayEvts.length > 0
+                  ? awayEvts.map((e, i) => (
+                      <div key={i} className="mx-no-lineup-evt">
+                        {e.min && <span className="mx-nle-min">{e.min}'</span>}
+                        <span className="mx-nle-player">{e.player}</span>
+                        <EventIcon type={e.type} />
+                      </div>
+                    ))
+                  : <span className="mx-no-lineup-msg">⏱ Lineup pending</span>}
+              </div>}
           {lineup?.awayCoach && <div className="mx-side-coach">⚽ {lineup.awayCoach}</div>}
         </div>
       </div>

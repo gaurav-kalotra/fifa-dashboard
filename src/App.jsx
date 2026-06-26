@@ -105,23 +105,21 @@ export default function App() {
         <div className="tv-bloom" />
 
         <div className="tv-header">
-          <div className="tv-title-block">
-            <span className="tv-trophy">🏆</span>
-            <div>
-              <div className="tv-title">FIFA World Cup 2026</div>
-              <div className="tv-subtitle">United States · Canada · Mexico</div>
+          <div className="tv-header-center">
+            <div className="tv-title-block">
+              <span className="tv-trophy">🏆</span>
+              <div>
+                <div className="tv-title">FIFA World Cup 2026</div>
+                <div className="tv-subtitle">United States · Canada · Mexico</div>
+              </div>
             </div>
-          </div>
-          <div className="tv-tabs-indicator">
-            {TV_TABS.map(t => (
-              <span key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}>
-                {t === 'matches' ? 'MATCHES' : 'SCHEDULE'}
-              </span>
-            ))}
-          </div>
-          <div className={`tv-status-badge status-${dataStatus}`}>
-            <span className="tv-status-dot" />
-            {dataStatus === 'live' ? 'LIVE' : dataStatus === 'snapshot' ? 'DATA' : 'CACHED'}
+            <div className="tv-tabs-indicator">
+              {TV_TABS.map(t => (
+                <span key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}>
+                  {t === 'matches' ? 'MATCHES' : 'SCHEDULE'}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
