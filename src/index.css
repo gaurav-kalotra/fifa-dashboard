@@ -611,9 +611,9 @@ body.tv-mode { overflow: hidden; }
   position: relative; overflow: hidden;
 }
 
-/* Dark overlay — heavy overall, radially lighter at center */
+/* Dark overlay — sits behind all content (z-index:0 < content z-index:1) */
 .tv-frame::before {
-  content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
   background:radial-gradient(ellipse 60% 55% at 50% 50%,
     rgba(0,0,0,0.55) 0%,
     rgba(0,0,0,0.72) 50%,
@@ -621,9 +621,9 @@ body.tv-mode { overflow: hidden; }
   );
 }
 
-/* Edge blur — CSS mask-based blur ring around perimeter, clear centre */
+/* Edge blur — only blurs background photo, not content above it */
 .tv-frame::after {
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:51;
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
   backdrop-filter:blur(12px);
   -webkit-mask-image:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, black 75%);
   mask-image:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, black 75%);
