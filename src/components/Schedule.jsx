@@ -63,10 +63,20 @@ function GroupTable({ letter, entries }) {
   )
 }
 
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+function fmtDate(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr + 'T12:00:00')
+  return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`
+}
+
 // ── Individual bracket match card ─────────────────────────────
-function BkCard({ num, byNum, resolve, side = 'left' }) {
+function BkCard({ num, byNum, resolve, isToday = false, isPotential = false }) {
   const m = byNum[num]
-  if (!m) return <div className="bk-slot empty"><span className="bk-slot-num">M{num}</span></div>
+  if (!m) {
+    const cls = isPotential ? 'bk-slot empty bk-potential' : 'bk-slot empty'
+    return <div className={cls}><span className="bk-slot-num">M{num}</span></div>
+  }
 
   const t1 = resolve(m.team1)
   const t2 = resolve(m.team2)
@@ -75,10 +85,19 @@ function BkCard({ num, byNum, resolve, side = 'left' }) {
   const played = !!ft
   const win1 = played && s1 > s2
   const win2 = played && s2 > s1
+  const dateStr = fmtDate(m.date)
+
+  let cls = 'bk-slot'
+  if (played) cls += ' played'
+  if (isToday) cls += ' bk-today'
+  else if (isPotential) cls += ' bk-potential'
 
   return (
-    <div className={`bk-slot${played ? ' played' : ''}`}>
-      <span className="bk-snum">M{num}</span>
+    <div className={cls}>
+      <div className="bk-snum-row">
+        <span className="bk-snum">M{num}</span>
+        {dateStr && <span className="bk-date">{dateStr}</span>}
+      </div>
       <div className={`bk-row${win1 ? ' win' : ''}`}>
         <Flag name={t1} cls="bk-flag" />
         <span className="bk-name">{t1 ? ab(t1) : m.team1}</span>
@@ -93,21 +112,26 @@ function BkCard({ num, byNum, resolve, side = 'left' }) {
   )
 }
 
+// Match num → the slot the winner advances to
+const BRACKET_NEXT = {
+  73:90, 75:90, 74:89, 77:89, 83:93, 84:93, 81:94, 82:94,
+  76:91, 78:91, 79:92, 80:92, 86:95, 88:95, 85:96, 87:96,
+  90:97, 89:97, 93:98, 94:98,
+  91:99, 92:99, 95:100, 96:100,
+  97:101, 98:101, 99:102, 100:102,
+  101:104, 102:104,
+}
+
 // ── One side of the bracket (left or right) ───────────────────
-function BracketHalf({ half, byNum, resolve, side }) {
-  const flip = side === 'right'
-  // R32 → R16: pairs: [r32[0],r32[1]]→r16[0], [r32[2],r32[3]]→r16[1], ...
+function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums }) {
   const r32Pairs = [[half.r32[0], half.r32[1]], [half.r32[2], half.r32[3]],
                     [half.r32[4], half.r32[5]], [half.r32[6], half.r32[7]]]
   const r16Pairs = [[half.r16[0], half.r16[1]], [half.r16[2], half.r16[3]]]
 
-  const colOrder = [
-    { key: 'r32', items: half.r32, pairSize: 2 },
-    { key: 'r16', items: half.r16, pairSize: 2 },
-    { key: 'qf', items: half.qf, pairSize: 2 },
-    { key: 'sf', items: [half.sf], pairSize: null },
-  ]
-  if (flip) colOrder.reverse()
+  const card = num => (
+    <BkCard num={num} byNum={byNum} resolve={resolve}
+      isToday={todayNums.has(num)} isPotential={potentialNums.has(num)} />
+  )
 
   return (
     <div className={`bk-half ${side}`}>
@@ -115,14 +139,8 @@ function BracketHalf({ half, byNum, resolve, side }) {
       <div className="bk-col bk-r32">
         {r32Pairs.map((pair, pi) => (
           <div key={pi} className="bk-pair">
-            <div className="bk-cell top">
-              <BkCard num={pair[0]} byNum={byNum} resolve={resolve} side={side} />
-              <div className="bk-conn-h" />
-            </div>
-            <div className="bk-cell bot">
-              <BkCard num={pair[1]} byNum={byNum} resolve={resolve} side={side} />
-              <div className="bk-conn-h" />
-            </div>
+            <div className="bk-cell top">{card(pair[0])}<div className="bk-conn-h" /></div>
+            <div className="bk-cell bot">{card(pair[1])}<div className="bk-conn-h" /></div>
             <div className="bk-conn-v" />
           </div>
         ))}
@@ -132,14 +150,8 @@ function BracketHalf({ half, byNum, resolve, side }) {
       <div className="bk-col bk-r16">
         {r16Pairs.map((pair, pi) => (
           <div key={pi} className="bk-pair">
-            <div className="bk-cell top">
-              <BkCard num={pair[0]} byNum={byNum} resolve={resolve} side={side} />
-              <div className="bk-conn-h" />
-            </div>
-            <div className="bk-cell bot">
-              <BkCard num={pair[1]} byNum={byNum} resolve={resolve} side={side} />
-              <div className="bk-conn-h" />
-            </div>
+            <div className="bk-cell top">{card(pair[0])}<div className="bk-conn-h" /></div>
+            <div className="bk-cell bot">{card(pair[1])}<div className="bk-conn-h" /></div>
             <div className="bk-conn-v" />
           </div>
         ))}
@@ -148,14 +160,8 @@ function BracketHalf({ half, byNum, resolve, side }) {
       {/* QF column */}
       <div className="bk-col bk-qf">
         <div className="bk-pair">
-          <div className="bk-cell top">
-            <BkCard num={half.qf[0]} byNum={byNum} resolve={resolve} side={side} />
-            <div className="bk-conn-h" />
-          </div>
-          <div className="bk-cell bot">
-            <BkCard num={half.qf[1]} byNum={byNum} resolve={resolve} side={side} />
-            <div className="bk-conn-h" />
-          </div>
+          <div className="bk-cell top">{card(half.qf[0])}<div className="bk-conn-h" /></div>
+          <div className="bk-cell bot">{card(half.qf[1])}<div className="bk-conn-h" /></div>
           <div className="bk-conn-v" />
         </div>
       </div>
@@ -163,8 +169,8 @@ function BracketHalf({ half, byNum, resolve, side }) {
       {/* SF column */}
       <div className="bk-col bk-sf">
         <div className="bk-cell sf-cell">
-          <BkCard num={half.sf} byNum={byNum} resolve={resolve} side={side} />
-          <div className="bk-conn-h final-h" />
+          {card(half.sf)}
+          <div className="bk-conn-h bk-final-h" />
         </div>
       </div>
     </div>
@@ -202,6 +208,13 @@ function FinalCard({ byNum, resolve }) {
   )
 }
 
+const ROUND_DATES = [
+  { round: 'R32', date: 'Jun 29–Jul 4'  },
+  { round: 'R16', date: 'Jul 6–9'       },
+  { round: 'QF',  date: 'Jul 11–12'     },
+  { round: 'SF',  date: 'Jul 15–16'     },
+]
+
 // ── Main export ───────────────────────────────────────────────
 export default function Schedule({ groups, matches }) {
   const byNum = useMemo(() => {
@@ -210,6 +223,21 @@ export default function Schedule({ groups, matches }) {
     return m
   }, [matches])
   const resolve = useMemo(() => buildResolver(groups, matches), [groups, matches])
+
+  // Detect today's bracket matches and one-step-ahead potential slots
+  const { todayNums, potentialNums } = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const todayNums = new Set()
+    const potentialNums = new Set()
+    for (const m of matches) {
+      if (m.num && m.date === today) {
+        todayNums.add(m.num)
+        const next = BRACKET_NEXT[m.num]
+        if (next) potentialNums.add(next)
+      }
+    }
+    return { todayNums, potentialNums }
+  }, [matches])
 
   const leftGroups = 'ABCDEF'.split('')
   const rightGroups = 'GHIJKL'.split('')
@@ -227,14 +255,29 @@ export default function Schedule({ groups, matches }) {
       {/* Bracket tree */}
       <div className="sch-bracket">
         <div className="sch-bracket-labels">
-          <span>R32</span><span>R16</span><span>QF</span><span>SF</span>
-          <span className="fin-lbl">FINAL</span>
-          <span>SF</span><span>QF</span><span>R16</span><span>R32</span>
+          {ROUND_DATES.map(({ round, date }) => (
+            <div key={round} className="bk-lbl">
+              <span className="bk-lbl-round">{round}</span>
+              <span className="bk-lbl-date">{date}</span>
+            </div>
+          ))}
+          <div className="bk-lbl fin-lbl">
+            <span className="bk-lbl-round">🏆 FINAL</span>
+            <span className="bk-lbl-date">Jul 19</span>
+          </div>
+          {[...ROUND_DATES].reverse().map(({ round, date }) => (
+            <div key={`r-${round}`} className="bk-lbl">
+              <span className="bk-lbl-round">{round}</span>
+              <span className="bk-lbl-date">{date}</span>
+            </div>
+          ))}
         </div>
         <div className="sch-bracket-body">
-          <BracketHalf half={LEFT} byNum={byNum} resolve={resolve} side="left" />
+          <BracketHalf half={LEFT} byNum={byNum} resolve={resolve} side="left"
+            todayNums={todayNums} potentialNums={potentialNums} />
           <FinalCard byNum={byNum} resolve={resolve} />
-          <BracketHalf half={RIGHT} byNum={byNum} resolve={resolve} side="right" />
+          <BracketHalf half={RIGHT} byNum={byNum} resolve={resolve} side="right"
+            todayNums={todayNums} potentialNums={potentialNums} />
         </div>
       </div>
 
