@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { computeGroups } from './utils'
 import SNAPSHOT from './data/snapshot'
 import Matches from './components/Matches'
@@ -11,7 +11,6 @@ import './index.css'
 
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
 const TV_TABS = ['matches', 'fixtures']
-const TV_INTERVAL_MS = 30_000
 
 const isTV = new URLSearchParams(window.location.search).get('tv') === '1'
 
@@ -46,6 +45,8 @@ export default function App() {
   const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
   const [matches, setMatches] = useState(SNAPSHOT.matches)
   const [dataStatus, setDataStatus] = useState('snapshot')
+  const tabChangeRef = useRef(Date.now())
+  const fixtureDurRef = useRef(30_000)
 
   useEffect(() => {
     const load = async () => {
@@ -64,25 +65,48 @@ export default function App() {
     return () => clearInterval(interval)
   }, [])
 
+  // Compute fixture-page duration based on today's group match pairs
+  const groups = useMemo(() => computeGroups(matches), [matches])
+  useEffect(() => {
+    if (!isTV) return
+    const today = new Date().toISOString().slice(0, 10)
+    const leftPairs = matches.filter(m => {
+      const g = m.group?.replace(/^Group\s+/i,'').toUpperCase()
+      return m.date === today && m.group && 'ABCDEF'.includes(g) && !m.score?.ft
+    }).length
+    const rightPairs = matches.filter(m => {
+      const g = m.group?.replace(/^Group\s+/i,'').toUpperCase()
+      return m.date === today && m.group && 'GHIJKL'.includes(g) && !m.score?.ft
+    }).length
+    const pairs = Math.max(leftPairs, rightPairs)
+    // 2 phases × 2.5s each per pair, plus 5s buffer, min 30s
+    fixtureDurRef.current = Math.max(30_000, pairs * 2 * 2500 + 5_000)
+  }, [matches, isTV])
+
   useEffect(() => {
     if (!isTV) return
     document.body.classList.add('tv-mode')
+    tabChangeRef.current = Date.now()
 
-    const rotate = setInterval(() => {
+    // Check every 500ms whether enough time has passed for current tab
+    const tick = setInterval(() => {
       setTab(t => {
-        const idx = TV_TABS.indexOf(t)
-        return TV_TABS[(idx + 1) % TV_TABS.length]
+        const dur = t === 'fixtures' ? fixtureDurRef.current : 30_000
+        if (Date.now() - tabChangeRef.current >= dur) {
+          tabChangeRef.current = Date.now()
+          return TV_TABS[(TV_TABS.indexOf(t) + 1) % TV_TABS.length]
+        }
+        return t
       })
-    }, TV_INTERVAL_MS)
+    }, 500)
 
     return () => {
-      clearInterval(rotate)
+      clearInterval(tick)
       document.body.classList.remove('tv-mode')
     }
   }, [])
 
   const [hasLive, setHasLive] = useState(false)
-  const groups = useMemo(() => computeGroups(matches), [matches])
 
   if (isTV) {
     return (

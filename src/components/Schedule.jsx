@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { ab, flagUrl, buildResolver, teamStatus } from '../utils'
 
 // ── Bracket structure for WC2026 ──────────────────────────────
@@ -25,8 +25,29 @@ function Flag({ name, cls = 'sch-flag' }) {
     : null
 }
 
+// Derive group letter from a match
+function groupOf(m) { return m?.group?.replace(/^Group\s+/i, '').toUpperCase() || '' }
+
+// Build winner/runner-up slot map from R32 match data
+function buildGroupToSlot(byNum) {
+  const winSlot = {}
+  const rupSlot = {}
+  for (const num of [...LEFT.r32, ...RIGHT.r32]) {
+    const m = byNum[num]
+    if (!m) continue
+    for (const t of [m.team1, m.team2]) {
+      if (!t) continue
+      const w = t.match(/Winner\s+Group\s+([A-L])/i)
+      const r = t.match(/Runner.up\s+Group\s+([A-L])/i)
+      if (w) winSlot[w[1].toUpperCase()] = num
+      if (r) rupSlot[r[1].toUpperCase()] = num
+    }
+  }
+  return { winSlot, rupSlot }
+}
+
 // ── Compact group table (full stats) ─────────────────────────
-function GroupTable({ letter, entries }) {
+function GroupTable({ letter, entries, spotlight = {} }) {
   if (!entries?.length) return null
   return (
     <div className="sch-group">
@@ -42,8 +63,10 @@ function GroupTable({ letter, entries }) {
         <tbody>
           {entries.map((e, i) => {
             const status = teamStatus(entries, i)
+            const spot = spotlight[e.t] || ''
+            const rowCls = [`sch-row-${status}`, spot && `sch-spot-${spot}`].filter(Boolean).join(' ')
             return (
-              <tr key={e.t} className={`sch-row-${status}`}>
+              <tr key={e.t} className={rowCls}>
                 <td className="sch-td-team">
                   <Flag name={e.t} cls="sch-flag-xs" />
                   <span>{ab(e.t)}</span>
@@ -71,10 +94,14 @@ function fmtDate(dateStr) {
 }
 
 // ── Individual bracket match card ─────────────────────────────
-function BkCard({ num, byNum, resolve, isToday = false, isPotential = false }) {
+function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isGreenSpot = false, isRedSpot = false, isElimSpot = false }) {
   const m = byNum[num]
   if (!m) {
-    const cls = isPotential ? 'bk-slot empty bk-potential' : 'bk-slot empty'
+    let cls = 'bk-slot empty'
+    if (isPotential) cls += ' bk-potential'
+    if (isGreenSpot) cls += ' bk-win-spot'
+    else if (isElimSpot) cls += ' bk-elim-spot'
+    else if (isRedSpot) cls += ' bk-lose-spot'
     return <div className={cls}><span className="bk-slot-num">M{num}</span></div>
   }
 
@@ -89,7 +116,10 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false }) {
 
   let cls = 'bk-slot'
   if (played) cls += ' played'
-  if (isToday) cls += ' bk-today'
+  if (isGreenSpot) cls += ' bk-win-spot'
+  else if (isElimSpot) cls += ' bk-elim-spot'
+  else if (isRedSpot) cls += ' bk-lose-spot'
+  else if (isToday) cls += ' bk-today'
   else if (isPotential) cls += ' bk-potential'
 
   return (
@@ -123,14 +153,15 @@ const BRACKET_NEXT = {
 }
 
 // ── One side of the bracket (left or right) ───────────────────
-function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums }) {
+function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums, greenSlots, redSlots, elimSlots }) {
   const r32Pairs = [[half.r32[0], half.r32[1]], [half.r32[2], half.r32[3]],
                     [half.r32[4], half.r32[5]], [half.r32[6], half.r32[7]]]
   const r16Pairs = [[half.r16[0], half.r16[1]], [half.r16[2], half.r16[3]]]
 
   const card = num => (
     <BkCard num={num} byNum={byNum} resolve={resolve}
-      isToday={todayNums.has(num)} isPotential={potentialNums.has(num)} />
+      isToday={todayNums.has(num)} isPotential={potentialNums.has(num)}
+      isGreenSpot={greenSlots.has(num)} isRedSpot={redSlots.has(num)} isElimSpot={elimSlots.has(num)} />
   )
 
   return (
@@ -180,7 +211,12 @@ function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums }) {
 // ── Final match card (center) ─────────────────────────────────
 function FinalCard({ byNum, resolve }) {
   const m = byNum[104]
-  if (!m) return <div className="bk-final-slot"><span className="bk-final-label">FINAL</span></div>
+  if (!m) return (
+    <div className="bk-final-slot">
+      <img src="/assets/wc-trophy2.png" alt="" className="bk-final-trophy" />
+      <span className="bk-final-label">FINAL</span>
+    </div>
+  )
 
   const t1 = resolve(m.team1)
   const t2 = resolve(m.team2)
@@ -192,7 +228,8 @@ function FinalCard({ byNum, resolve }) {
 
   return (
     <div className="bk-final-slot">
-      <span className="bk-final-label">🏆 FINAL</span>
+      <img src="/assets/wc-trophy2.png" alt="" className="bk-final-trophy" />
+      <span className="bk-final-label">FINAL</span>
       <div className={`bk-final-row${win1 ? ' win' : ''}`}>
         <Flag name={t1} cls="bk-flag-lg" />
         <span>{t1 ? ab(t1) : (m.team1 || '?')}</span>
@@ -215,6 +252,10 @@ const ROUND_DATES = [
   { round: 'SF',  date: 'Jul 15–16'     },
 ]
 
+const LEFT_GROUPS  = 'ABCDEF'.split('')
+const RIGHT_GROUPS = 'GHIJKL'.split('')
+const PHASE_MS = 2500 // ms each win/lose phase is shown
+
 // ── Main export ───────────────────────────────────────────────
 export default function Schedule({ groups, matches }) {
   const byNum = useMemo(() => {
@@ -223,14 +264,76 @@ export default function Schedule({ groups, matches }) {
     return m
   }, [matches])
   const resolve = useMemo(() => buildResolver(groups, matches), [groups, matches])
+  const slotMap = useMemo(() => buildGroupToSlot(byNum), [byNum])
 
-  // Detect today's bracket matches and one-step-ahead potential slots
+  // Today's unplayed group matches split by bracket side
+  const { spotlightPairs, pairCount } = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const left = []
+    const right = []
+    for (const m of matches) {
+      if (m.date !== today || !m.group || m.score?.ft) continue
+      const g = groupOf(m)
+      if (LEFT_GROUPS.includes(g)) left.push(m)
+      else if (RIGHT_GROUPS.includes(g)) right.push(m)
+    }
+    const len = Math.max(left.length, right.length)
+    const pairs = []
+    for (let i = 0; i < len; i++) pairs.push({ left: left[i] || null, right: right[i] || null })
+    return { spotlightPairs: pairs, pairCount: pairs.length }
+  }, [matches])
+
+  // Cycle: pairIdx × phase (0=team1 wins, 1=team2 wins)
+  const [spot, setSpot] = useState({ pairIdx: 0, phase: 0 })
+  const spotRef = useRef(spot)
+  useEffect(() => { spotRef.current = spot }, [spot])
+
+  useEffect(() => {
+    if (!pairCount) return
+    const t = setInterval(() => {
+      setSpot(prev => prev.phase === 0
+        ? { ...prev, phase: 1 }
+        : { pairIdx: (prev.pairIdx + 1) % pairCount, phase: 0 })
+    }, PHASE_MS)
+    return () => clearInterval(t)
+  }, [pairCount])
+
+  // Compute what to highlight right now
+  const spotlightInfo = useMemo(() => {
+    if (!pairCount) return null
+    const pair = spotlightPairs[spot.pairIdx]
+    const { winSlot, rupSlot } = slotMap
+    const spotlight = {}   // { [teamName]: 'green'|'red'|'elim' }
+    const greenSlots = new Set()
+    const redSlots   = new Set()
+    const elimSlots  = new Set()
+
+    for (const side of ['left', 'right']) {
+      const m = pair?.[side]
+      if (!m) continue
+      const g = groupOf(m)
+      const winner = spot.phase === 0 ? m.team1 : m.team2
+      const loser  = spot.phase === 0 ? m.team2 : m.team1
+      const loserEntry = (groups[g] || []).find(e => e.t === loser)
+      const isElim = loserEntry && loserEntry.pts === 0 && loserEntry.p >= 2
+      spotlight[winner] = 'green'
+      spotlight[loser]  = isElim ? 'elim' : 'red'
+      if (winSlot[g]) greenSlots.add(winSlot[g])
+      if (rupSlot[g]) {
+        if (isElim) elimSlots.add(rupSlot[g])
+        else        redSlots.add(rupSlot[g])
+      }
+    }
+    return { spotlight, greenSlots, redSlots, elimSlots }
+  }, [spot, spotlightPairs, slotMap, groups, pairCount])
+
+  // Today's knockout matches and potential next slots (pre-existing feature)
   const { todayNums, potentialNums } = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10)
     const todayNums = new Set()
     const potentialNums = new Set()
     for (const m of matches) {
-      if (m.num && m.date === today) {
+      if (m.num && m.date === today && !m.group) {
         todayNums.add(m.num)
         const next = BRACKET_NEXT[m.num]
         if (next) potentialNums.add(next)
@@ -239,8 +342,10 @@ export default function Schedule({ groups, matches }) {
     return { todayNums, potentialNums }
   }, [matches])
 
-  const leftGroups = 'ABCDEF'.split('')
-  const rightGroups = 'GHIJKL'.split('')
+  const gs  = spotlightInfo?.greenSlots || new Set()
+  const rs  = spotlightInfo?.redSlots   || new Set()
+  const es  = spotlightInfo?.elimSlots  || new Set()
+  const sp  = spotlightInfo?.spotlight  || {}
 
   return (
     <div className="sch-layout">
@@ -248,7 +353,9 @@ export default function Schedule({ groups, matches }) {
       <div className="sch-groups-panel left">
         <div className="sch-panel-title">⚽ Groups A–F</div>
         <div className="sch-groups-col">
-          {leftGroups.map(g => <GroupTable key={g} letter={g} entries={groups[g]} />)}
+          {LEFT_GROUPS.map(g => (
+            <GroupTable key={g} letter={g} entries={groups[g]} spotlight={sp} />
+          ))}
         </div>
       </div>
 
@@ -262,7 +369,7 @@ export default function Schedule({ groups, matches }) {
             </div>
           ))}
           <div className="bk-lbl fin-lbl">
-            <span className="bk-lbl-round">🏆 FINAL</span>
+            <span className="bk-lbl-round">FINAL</span>
             <span className="bk-lbl-date">Jul 19</span>
           </div>
           {[...ROUND_DATES].reverse().map(({ round, date }) => (
@@ -274,10 +381,12 @@ export default function Schedule({ groups, matches }) {
         </div>
         <div className="sch-bracket-body">
           <BracketHalf half={LEFT} byNum={byNum} resolve={resolve} side="left"
-            todayNums={todayNums} potentialNums={potentialNums} />
+            todayNums={todayNums} potentialNums={potentialNums}
+            greenSlots={gs} redSlots={rs} elimSlots={es} />
           <FinalCard byNum={byNum} resolve={resolve} />
           <BracketHalf half={RIGHT} byNum={byNum} resolve={resolve} side="right"
-            todayNums={todayNums} potentialNums={potentialNums} />
+            todayNums={todayNums} potentialNums={potentialNums}
+            greenSlots={gs} redSlots={rs} elimSlots={es} />
         </div>
       </div>
 
@@ -285,7 +394,9 @@ export default function Schedule({ groups, matches }) {
       <div className="sch-groups-panel right">
         <div className="sch-panel-title">Groups G–L ⚽</div>
         <div className="sch-groups-col">
-          {rightGroups.map(g => <GroupTable key={g} letter={g} entries={groups[g]} />)}
+          {RIGHT_GROUPS.map(g => (
+            <GroupTable key={g} letter={g} entries={groups[g]} spotlight={sp} />
+          ))}
         </div>
       </div>
     </div>

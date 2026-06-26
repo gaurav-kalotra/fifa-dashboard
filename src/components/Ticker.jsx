@@ -214,12 +214,12 @@ export default function Ticker({ matches, groups }) {
                 : item.icon === '🏆'
                   ? <img src="/assets/wc-trophy2.png" alt="" className="ticker-trophy-icon" />
                   : <span className="ticker-item-icon">{item.icon}</span>}
+              <span className={item.ctxAward ? 'ticker-ctx ticker-award-icon' : 'ticker-ctx'}>{item.ctx}</span>
+              {item.text}
               {item.teams?.map(t => {
                 const f = flagUrl(t)
                 return f ? <img key={t} src={f} alt={t} className="ticker-flag" /> : null
               })}
-              <span className={item.ctxAward ? 'ticker-ctx ticker-award-icon' : 'ticker-ctx'}>{item.ctx}</span>
-              {item.text}
               <span className="ticker-sep">◆</span>
             </span>
           ))}

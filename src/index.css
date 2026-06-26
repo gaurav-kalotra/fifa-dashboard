@@ -1329,7 +1329,7 @@ body.tv-mode { overflow: hidden; }
 .sch-group {
   background:rgba(3,6,18,.38);
   border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(18px) saturate(1.2);
+  backdrop-filter:blur(10px) saturate(1.1);
   border-left:3px solid rgba(251,191,36,.5);
   border-radius:4px; overflow:hidden; flex:1; min-height:0;
 }
@@ -1415,6 +1415,40 @@ body.tv-mode { overflow: hidden; }
 .bk-slot.played   { border-left-color:rgba(74,222,128,.7); }
 .bk-slot.empty    { opacity:.2; border-style:dashed; }
 
+/* Group table row spotlight */
+@keyframes sch-spot-green-pulse {
+  0%,100% { background:rgba(74,222,128,.0); box-shadow:none; }
+  50%      { background:rgba(74,222,128,.12); box-shadow:inset 0 0 0 1px rgba(74,222,128,.4); }
+}
+@keyframes sch-spot-red-pulse {
+  0%,100% { background:rgba(248,113,113,.0); box-shadow:none; }
+  50%      { background:rgba(248,113,113,.12); box-shadow:inset 0 0 0 1px rgba(248,113,113,.4); }
+}
+@keyframes sch-spot-elim-pulse {
+  0%,20%,100% { background:rgba(139,0,0,.0); box-shadow:none; }
+  50%          { background:rgba(139,0,0,.22); box-shadow:inset 0 0 0 1.5px rgba(255,50,50,.7), 0 0 14px rgba(255,50,50,.25); }
+}
+.sch-spot-green { animation:sch-spot-green-pulse 1.6s ease-in-out infinite; }
+.sch-spot-red   { animation:sch-spot-red-pulse   1.6s ease-in-out infinite; }
+.sch-spot-elim  { animation:sch-spot-elim-pulse  1.0s ease-in-out infinite; }
+
+/* Bracket slot win (green) / lose (red) / elimination (dramatic) spotlight */
+@keyframes bk-win-pulse {
+  0%,100% { border-color:rgba(74,222,128,.25); box-shadow:none; }
+  50%      { border-color:rgba(74,222,128,.9); box-shadow:0 0 14px 3px rgba(74,222,128,.3), inset 0 0 8px rgba(74,222,128,.1); }
+}
+@keyframes bk-lose-pulse {
+  0%,100% { border-color:rgba(248,113,113,.25); box-shadow:none; }
+  50%      { border-color:rgba(248,113,113,.85); box-shadow:0 0 14px 3px rgba(248,113,113,.28), inset 0 0 8px rgba(248,113,113,.1); }
+}
+@keyframes bk-elim-pulse {
+  0%,100% { border-color:rgba(220,30,30,.2); box-shadow:none; background:rgba(3,6,18,.52); }
+  50%      { border-color:rgba(255,0,0,.95); box-shadow:0 0 22px 5px rgba(255,30,30,.4), inset 0 0 12px rgba(255,0,0,.2); background:rgba(60,0,0,.35); }
+}
+.bk-slot.bk-win-spot  { animation:bk-win-pulse  1.6s ease-in-out infinite; }
+.bk-slot.bk-lose-spot { animation:bk-lose-pulse 1.6s ease-in-out infinite; }
+.bk-slot.bk-elim-spot { animation:bk-elim-pulse 1.0s ease-in-out infinite; }
+
 /* Today's live bracket match — blue pulse */
 @keyframes bk-today-pulse {
   0%,100% { box-shadow:0 0 0 0 rgba(125,211,252,0), inset 0 0 0 0 rgba(125,211,252,0); border-color:rgba(125,211,252,.7); }
@@ -1456,8 +1490,13 @@ body.tv-mode { overflow: hidden; }
     0 0 36px rgba(251,191,36,.28),
     inset 0 0 14px rgba(251,191,36,.07);
 }
+.bk-final-trophy {
+  height:clamp(18px,2.8vh,38px); width:auto; object-fit:contain;
+  filter:drop-shadow(0 0 8px rgba(251,191,36,.5));
+  flex-shrink:0;
+}
 .bk-final-label {
-  font-family:'Oswald',system-ui,sans-serif; font-size:1.3vh;
+  font-family:'Oswald',system-ui,sans-serif; font-size:1.25vh;
   color:#fbbf24; letter-spacing:.14em; text-align:center;
 }
 .bk-final-row {
