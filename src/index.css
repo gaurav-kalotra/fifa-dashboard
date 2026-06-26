@@ -701,6 +701,7 @@ body.tv-mode { overflow: hidden; }
 .tv-tabs-indicator { display:flex; gap:1.8vw; align-items:center; }
 
 .tv-trophy { font-size:clamp(20px,3.2vh,40px); filter:drop-shadow(0 0 16px rgba(251,191,36,0.85)) drop-shadow(0 0 6px rgba(251,191,36,0.5)); animation:trophy-bob 3s ease-in-out infinite; }
+.tv-trophy-img { height:clamp(28px,4.5vh,56px); width:auto; object-fit:contain; filter:drop-shadow(0 0 12px rgba(251,191,36,0.7)); animation:trophy-bob 3s ease-in-out infinite; }
 @keyframes trophy-bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
 
 .tv-title {

@@ -40,11 +40,26 @@ function Stars() {
   )
 }
 
+const FIFA_COMP_API = 'https://api.fifa.com/api/v3/competitions/17?language=en'
+
 export default function App() {
   const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
   const [matches, setMatches] = useState(SNAPSHOT.matches)
   const [dataStatus, setDataStatus] = useState('snapshot')
+  const [wcLogo, setWcLogo] = useState(null)
   const cursorTimer = useRef(null)
+
+  // Fetch official FIFA WC2026 emblem
+  useEffect(() => {
+    fetch(FIFA_COMP_API)
+      .then(r => r.json())
+      .then(d => {
+        const url = d.PictureUrl || d.LogoUrl || d.Picture?.[0]?.PictureUrl
+                 || d.Emblem?.[0]?.PictureUrl || d.Media?.[0]?.PictureUrl
+        if (url) setWcLogo(url)
+      })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const load = async () => {
@@ -108,7 +123,9 @@ export default function App() {
         <div className="tv-header">
           <div className="tv-header-center">
             <div className="tv-title-block">
-              <span className="tv-trophy">🏆</span>
+              {wcLogo
+                ? <img src={wcLogo} alt="WC2026" className="tv-trophy-img" onError={e => { e.target.style.display='none' }} />
+                : <span className="tv-trophy">🏆</span>}
               <div>
                 <div className="tv-title">FIFA World Cup 2026</div>
                 <div className="tv-subtitle">United States · Canada · Mexico</div>

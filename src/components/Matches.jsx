@@ -491,7 +491,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
           espnIds[key] = ev.id
           newMap[key]  = {
             mk: `espn:${ev.id}`, date: ev.date,
-            venue: comp.venue?.fullName||comp.venue?.shortName||'',
+            venue: [comp.venue?.fullName||comp.venue?.shortName, comp.venue?.address?.city||comp.venue?.city].filter(Boolean).join(', '),
             state, clock: ev.status?.displayClock||'',
             liveScore:  state==='in'   ? sc : null,
             postScore:  state==='post' ? sc : null,
@@ -517,7 +517,14 @@ export default function Matches({ matches, groups, onLiveChange }) {
             idStage:   m.IdStage,
             idMatch:   m.IdMatch,
             date:      m.Date || existing.date,
-            venue:     [m.Stadium?.Name?.[0]?.Description, m.Stadium?.CityName?.[0]?.Description].filter(Boolean).join(', ') || existing.venue || '',
+            venue:     (() => {
+              const stadium = m.Stadium?.Name?.[0]?.Description || ''
+              const city = m.Stadium?.CityName?.[0]?.Description
+                        || m.Stadium?.City?.[0]?.Description
+                        || m.Stadium?.City?.Name?.[0]?.Description
+                        || m.Stadium?.CityName || ''
+              return [stadium, city].filter(Boolean).join(', ') || existing.venue || ''
+            })(),
             state,
             clock:     m.MatchTime || existing.clock || '',
             liveScore: state==='in'   ? sc : null,
