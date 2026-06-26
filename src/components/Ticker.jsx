@@ -82,7 +82,7 @@ export default function Ticker({ matches, groups }) {
         const r = await fetch(ESPN_LEADERS)
         const d = await r.json()
         const goals = d.categories?.find(c => c.name === 'goalsLeaders')
-        const top6  = (goals?.leaders || []).slice(0, 6)
+        const top6  = (goals?.leaders || []).slice(0, 10)
         const scorers = (await Promise.all(
           top6.map(async l => {
             const id = getAthleteId(l.athlete?.['$ref'])
@@ -105,7 +105,7 @@ export default function Ticker({ matches, groups }) {
       } catch {}
     }
     load()
-    const iv = setInterval(load, 5 * 60_000)
+    const iv = setInterval(load, 2 * 60_000)
     return () => clearInterval(iv)
   }, [])
 
