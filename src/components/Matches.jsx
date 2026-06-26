@@ -348,7 +348,7 @@ export default function Matches({ matches }) {
   return (
     <div className="mx-outer">
       <div
-        className="mx-schedule-row"
+        className={`mx-schedule-row${hasLive ? '' : ' no-live'}`}
         style={hasLive ? { flex: `0 0 ${schedBasis}` } : undefined}
       >
         {visible.map(({ round: [name, ms], idx }) => (

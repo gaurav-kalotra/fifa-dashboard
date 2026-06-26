@@ -975,6 +975,21 @@ body.tv-mode { overflow: hidden; }
 .mx-row:last-child { border-bottom:none; }
 .mx-row.live { background:rgba(96,165,250,.06); }
 
+/* No-live mode: rows fill the full card height evenly */
+.mx-schedule-row.no-live { align-items:stretch; }
+.mx-schedule-row.no-live .mx-block { opacity:1; }
+.mx-schedule-row.no-live .mx-block-matches { display:flex; flex-direction:column; }
+.mx-schedule-row.no-live .mx-row { flex:1; padding:0 1vw; border-bottom-color:rgba(255,255,255,.03); }
+.mx-schedule-row.no-live .mx-block.current .mx-row { padding:0 1.2vw; }
+.mx-schedule-row.no-live .mx-name { font-size:2.0vh; }
+.mx-schedule-row.no-live .mx-block.current .mx-name { font-size:2.4vh; }
+.mx-schedule-row.no-live .mx-score { font-size:2.8vh; }
+.mx-schedule-row.no-live .mx-block.current .mx-score { font-size:3.4vh; }
+.mx-schedule-row.no-live .mx-vs { font-size:1.6vh; }
+.mx-schedule-row.no-live .mx-block.current .mx-vs { font-size:2.0vh; }
+.mx-schedule-row.no-live .mx-flag { width:28px; height:18px; }
+.mx-schedule-row.no-live .mx-block.current .mx-flag { width:34px; height:22px; }
+
 .mx-team-cell { display:flex; align-items:center; gap:.4vw; min-width:0; }
 .mx-team-cell.left { flex-direction:row; justify-content:flex-end; }
 .mx-team-cell.right { flex-direction:row-reverse; justify-content:flex-end; }
