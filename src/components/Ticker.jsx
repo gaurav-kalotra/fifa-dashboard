@@ -110,28 +110,19 @@ export default function Ticker({ matches, groups }) {
   }, [])
 
   const items = useMemo(() => {
-    const out = []
     const played = matches.filter(m => m.score?.ft)
+    const other = []
 
     matches.filter(m => !m.score?.ft && m.group).slice(0, 6).forEach(m => {
-      out.push({ icon: '🗓️', ctx: m.group?.replace('Group ','GRP ') || '', text: `${ab(m.team1)} vs ${ab(m.team2)}`, type: 'upcoming', teams: [m.team1, m.team2] })
-    })
-
-    espnScorers.forEach(s => {
-      out.push({
-        icon: '🥅', ctx: 'GOLDEN BOOT',
-        text: `${s.name}${s.jersey ? ` #${s.jersey}` : ''} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
-        photo: s.photo,
-        type: 'stat',
-      })
+      other.push({ icon: '🗓️', ctx: m.group?.replace('Group ','GRP ') || '', text: `${ab(m.team1)} vs ${ab(m.team2)}`, type: 'upcoming', teams: [m.team1, m.team2] })
     })
 
     for (const [g, entries] of Object.entries(groups || {})) {
       if (!entries?.length) continue
       if (entries[1]?.pts >= 6)
-        out.push({ icon: '✅', ctx: `GROUP ${g}`, text: `${ab(entries[0].t)} & ${ab(entries[1].t)} advance to Round of 32`, type: 'qual', teams: [entries[0].t, entries[1].t] })
+        other.push({ icon: '✅', ctx: `GROUP ${g}`, text: `${ab(entries[0].t)} & ${ab(entries[1].t)} advance to Round of 32`, type: 'qual', teams: [entries[0].t, entries[1].t] })
       entries.filter(e => e.p >= 2 && e.pts === 0).forEach(e =>
-        out.push({ icon: '⚠️', ctx: `GROUP ${g}`, text: `${ab(e.t)} need a win to stay alive`, type: 'danger', teams: [e.t] })
+        other.push({ icon: '⚠️', ctx: `GROUP ${g}`, text: `${ab(e.t)} need a win to stay alive`, type: 'danger', teams: [e.t] })
       )
     }
 
@@ -139,10 +130,10 @@ export default function Ticker({ matches, groups }) {
     if (all.length) {
       const top = [...all].sort((a, b) => b.gf - a.gf)[0]
       if (top?.gf >= 4)
-        out.push({ icon: '⚡', ctx: 'ATTACK', text: `${ab(top.t)} lead the tournament with ${top.gf} goals scored`, type: 'stat', teams: [top.t] })
+        other.push({ icon: '⚡', ctx: 'ATTACK', text: `${ab(top.t)} lead the tournament with ${top.gf} goals scored`, type: 'stat', teams: [top.t] })
       const def = [...all].filter(e => e.p > 0).sort((a, b) => a.ga - b.ga)[0]
       if (def?.ga === 0 && def.p >= 2)
-        out.push({ icon: '🛡️', ctx: 'DEFENSE', text: `${ab(def.t)} – ${def.p} games, zero goals conceded`, type: 'stat', teams: [def.t] })
+        other.push({ icon: '🛡️', ctx: 'DEFENSE', text: `${ab(def.t)} – ${def.p} games, zero goals conceded`, type: 'stat', teams: [def.t] })
     }
 
     if (played.length) {
@@ -152,14 +143,22 @@ export default function Ticker({ matches, groups }) {
       const diff = Math.abs(big.score.ft[0] - big.score.ft[1])
       if (diff >= 3) {
         const [s1, s2] = big.score.ft
-        out.push({ icon: '🔥', ctx: 'BIGGEST WIN', text: `${ab(big.team1)} ${s1}–${s2} ${ab(big.team2)}`, type: 'record', teams: [big.team1, big.team2] })
+        other.push({ icon: '🔥', ctx: 'BIGGEST WIN', text: `${ab(big.team1)} ${s1}–${s2} ${ab(big.team2)}`, type: 'record', teams: [big.team1, big.team2] })
       }
     }
 
     const shift = played.length % FACTS.length
-    out.push(...FACTS.slice(shift), ...FACTS.slice(0, shift))
+    other.push(...FACTS.slice(shift), ...FACTS.slice(0, shift))
 
-    return shuffle(out, played.length)
+    // Scorers stay as a consecutive block at the top; rest is shuffled
+    const scorerItems = espnScorers.map((s, rank) => ({
+      icon: '🥅', ctx: 'GOLDEN BOOT',
+      text: `${rank + 1}. ${s.name}${s.jersey ? ` #${s.jersey}` : ''} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
+      photo: s.photo,
+      type: 'stat',
+    }))
+
+    return [...scorerItems, ...shuffle(other, played.length)]
   }, [matches, groups, espnScorers])
 
   if (!items.length) return null
@@ -171,7 +170,7 @@ export default function Ticker({ matches, groups }) {
   return (
     <div className="ticker">
       <div className="ticker-badge">
-        <img src="/assets/wc-trophy.png" alt="" className="ticker-trophy-icon" />
+        <img src="/assets/wc-trophy2.png" alt="" className="ticker-trophy-icon" />
         <span>WC2026</span>
       </div>
       <div className="ticker-track">
@@ -185,7 +184,7 @@ export default function Ticker({ matches, groups }) {
               {item.photo
                 ? <img src={item.photo} alt="" className="ticker-player-photo" onError={e=>{e.target.style.display='none'}} />
                 : item.icon === '🏆'
-                  ? <img src="/assets/wc-trophy.png" alt="" className="ticker-trophy-icon" />
+                  ? <img src="/assets/wc-trophy2.png" alt="" className="ticker-trophy-icon" />
                   : <span className="ticker-item-icon">{item.icon}</span>}
               {item.teams?.map(t => {
                 const f = flagUrl(t)
