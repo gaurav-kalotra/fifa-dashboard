@@ -1,55 +1,47 @@
 import { useMemo, useState, useEffect } from 'react'
 import { ab, flagUrl } from '../utils'
+import playerManifest from '../playerManifest.json'
 
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
 const ESPN_ATHLETE = id =>
   `https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/${id}?lang=en&region=us`
-const APISPORTS_KEY = import.meta.env.VITE_RAPIDAPI_KEY
-// PL, La Liga, Ligue 1 — covers ~95% of WC top scorers
-const CLUB_LEAGUES = [39, 140, 61]
-const APISPORTS_PLAYER = (name, league) =>
-  `https://v3.football.api-sports.io/players?search=${encodeURIComponent(name)}&league=${league}&season=2024`
-const TSDB_SEARCH = q =>
-  `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(q)}`
 
-// Module-level cache: one lookup per player per session
-const photoCache = {}
+// Build last-name index for fuzzy matching
+const lastNameIdx = {}
+for (const key of Object.keys(playerManifest)) {
+  const ln = key.split(' ').pop().toLowerCase()
+  ;(lastNameIdx[ln] = lastNameIdx[ln] || []).push(key)
+}
 
 function stripDiacritics(str) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
-async function fetchPlayerPhoto(rawName) {
+function localPhoto(rawName) {
+  if (!rawName) return null
   const name = stripDiacritics(rawName)
-  if (name in photoCache) return photoCache[name]
-
-  // API-Sports: search by last name across top club leagues
-  if (APISPORTS_KEY) {
-    const lastName = name.split(' ').pop()
-    for (const league of CLUB_LEAGUES) {
-      try {
-        const r = await fetch(APISPORTS_PLAYER(lastName, league), {
-          headers: { 'x-apisports-key': APISPORTS_KEY }
-        })
-        const d = await r.json()
-        const photo = d.response?.[0]?.player?.photo
-        if (photo) { photoCache[name] = photo; return photo }
-      } catch {}
-    }
+  // 1. Exact match
+  if (playerManifest[name]) return playerManifest[name]
+  // 2. "FirstInitial. Rest" abbreviated form
+  const parts = name.split(' ')
+  if (parts.length >= 2) {
+    const abbr = `${parts[0][0]}. ${parts.slice(1).join(' ')}`
+    if (playerManifest[abbr]) return playerManifest[abbr]
   }
+  // 3. Last-name fallback (picks first match, good enough for golden boot)
+  const ln = parts[parts.length - 1].toLowerCase()
+  const candidates = lastNameIdx[ln] || []
+  if (candidates.length === 1) return playerManifest[candidates[0]]
+  if (candidates.length > 1) {
+    const initial = parts[0][0].toUpperCase()
+    const hit = candidates.find(c => c.startsWith(initial + '.') || c.startsWith(initial + ' '))
+    return playerManifest[hit || candidates[0]]
+  }
+  return null
+}
 
-  // Fallback: TheSportsDB (free, no limit)
-  try {
-    const tsdb = async q => {
-      const r = await fetch(TSDB_SEARCH(q))
-      const d = await r.json()
-      const p = d.player?.[0]
-      return p?.strCutout || p?.strThumb || null
-    }
-    const photo = (await tsdb(name)) || (await tsdb(name.split(' ').pop()))
-    photoCache[name] = photo
-    return photo
-  } catch { photoCache[name] = null; return null }
+async function fetchPlayerPhoto(rawName) {
+  return localPhoto(rawName)
 }
 
 const FACTS = [
