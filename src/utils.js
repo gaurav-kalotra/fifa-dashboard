@@ -13,9 +13,16 @@ const ISO2 = {
   "England":"gb-eng","Croatia":"hr","Ghana":"gh","Panama":"pa",
 }
 
-const NAME_NORM = { "Türkiye": "Turkey", "Côte d'Ivoire": "Ivory Coast", "United States": "USA" }
+const NAME_NORM = { "Türkiye": "Turkey", "Côte d'Ivoire": "Ivory Coast", "United States": "USA", "United States of America": "USA", "Korea Republic": "South Korea", "Republic of Korea": "South Korea" }
+
+// Reverse ABBR map: 3-letter code → canonical name for flagUrl
+const ABBR_TO_NAME = {}
+
 export const flagUrl = (name) => {
-  const code = ISO2[NAME_NORM[name] || name]
+  if (!name) return null
+  // Try direct name lookup first, then 3-letter abbr reverse lookup
+  const norm = NAME_NORM[name] || name
+  const code = ISO2[norm] || ISO2[ABBR_TO_NAME[norm.toUpperCase()]]
   return code ? `https://flagcdn.com/w40/${code}.png` : null
 }
 
@@ -33,6 +40,9 @@ export const ABBR = {
   "Portugal":"POR","DR Congo":"COD","Uzbekistan":"UZB","Colombia":"COL",
   "England":"ENG","Croatia":"CRO","Ghana":"GHA","Panama":"PAN",
 }
+
+// Populate reverse map after ABBR is defined
+for (const [name, code] of Object.entries(ABBR)) ABBR_TO_NAME[code] = name
 
 export const ab = (n) => ABBR[n] || (n ? n.slice(0, 3).toUpperCase() : '')
 

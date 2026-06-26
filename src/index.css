@@ -971,11 +971,11 @@ body.tv-mode { overflow: hidden; }
 .mx-rnd-progress { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(255,255,255,.35); }
 .mx-rnd-date {
   text-align:center; padding:.18vh .8vw .28vh;
-  font-family:'Oswald',system-ui,sans-serif; font-size:1.1vh; font-weight:400;
-  color:rgba(255,255,255,.5); letter-spacing:.12em; text-transform:uppercase;
+  font-family:'Inter',system-ui,sans-serif; font-size:1.05vh; font-weight:600;
+  color:rgba(255,255,255,.45); letter-spacing:.02em; font-style:italic;
   border-bottom:1px solid rgba(255,255,255,.07);
 }
-.mx-block.current .mx-rnd-date { color:rgba(251,191,36,.85); font-size:1.2vh; }
+.mx-block.current .mx-rnd-date { color:rgba(251,191,36,.9); font-size:1.15vh; }
 .mx-block-matches { flex:1; overflow:hidden; }
 
 /* Individual match row */
@@ -1031,8 +1031,12 @@ body.tv-mode { overflow: hidden; }
 .mx-score { font-family:'Space Mono',monospace; font-size:2.2vh; font-weight:700; color:#fff; text-align:center; text-shadow:0 0 20px rgba(34,211,238,0.65), 0 0 40px rgba(34,211,238,0.2); }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
 .mx-ft-badge {
-  font-family:'Space Mono',monospace; font-size:.85vh; letter-spacing:.08em;
-  color:rgba(255,255,255,.35); margin-top:1px;
+  font-family:'Space Mono',monospace; font-size:.75vh; letter-spacing:.12em;
+  color:rgba(255,255,255,.3);
+}
+/* When FT is above the score (.above = current card only) */
+.mx-ft-badge.above {
+  font-size:.8vh; color:rgba(61,255,160,.55); letter-spacing:.15em; margin-bottom:1px;
 }
 /* Sliding bar above the match clock in live rows */
 .mx-live-slider {
