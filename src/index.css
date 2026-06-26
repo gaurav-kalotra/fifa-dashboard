@@ -1111,7 +1111,17 @@ body.tv-mode {
 .mx-block.current .mx-score { font-size:2.6vh; }
 .mx-vs { font-size:1.4vh; color:rgba(255,255,255,.55); text-shadow:0 0 8px rgba(255,255,255,.2); }
 .mx-block.current .mx-vs { font-size:1.7vh; }
-.mx-live-pip { width:7px; height:7px; border-radius:50%; background:#E61D25; flex-shrink:0; animation:live-blink 1.4s ease-in-out infinite; }
+.mx-live-label {
+  display:flex; align-items:center; gap:3px;
+  font-family:'Oswald',system-ui,sans-serif; font-size:clamp(8px,.95vh,12px);
+  font-weight:700; letter-spacing:.1em; color:#3dffa0;
+  text-shadow:0 0 8px rgba(61,255,160,.5);
+}
+.mx-live-green-dot {
+  width:6px; height:6px; border-radius:50%; background:#3dffa0; flex-shrink:0;
+  animation:live-blink 1.4s ease-in-out infinite;
+  box-shadow:0 0 6px rgba(61,255,160,.8);
+}
 
 /* Venue + time under score in current tile */
 .mx-match-detail {

@@ -502,7 +502,11 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
         {/* Top row: everything above score/vs */}
         <div className="mx-cen-top">
           {isLive && <div className="mx-live-slider" />}
-          {isLive && <span className="mx-live-pip" />}
+          {isLive && (
+            <span className="mx-live-label">
+              <span className="mx-live-green-dot" />LIVE
+            </span>
+          )}
           {isLive && fifaInfo?.clock && <span className="mx-live-match-clock">{fifaInfo.clock}</span>}
           {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
           {!isLive && !played && m.group && dayOffset === 0 && <span className="mx-match-group">{m.group}</span>}
@@ -557,9 +561,16 @@ function ordinal(n) {
 
 // ── Matchday block ────────────────────────────────────────────
 function RoundBlock({ roundName, ms, highlight, dayOffset, showDetails, fifaMap, statusMap, timelines, rankings }) {
-  const played = ms.filter(m=>m.score?.ft).length
+  const sorted = useMemo(()=>
+    [...ms].sort((a,b)=>{
+      const ta = fifaMap?.[abKey(a.team1,a.team2)]?.date||''
+      const tb = fifaMap?.[abKey(b.team1,b.team2)]?.date||''
+      return ta<tb?-1:ta>tb?1:0
+    }),
+  [ms,fifaMap])
+  const played = sorted.filter(m=>m.score?.ft).length
   let roundDateStr = null
-  for (const m of ms) {
+  for (const m of sorted) {
     const fi = fifaMap?.[abKey(m.team1,m.team2)]
     if (fi?.date) {
       try {
@@ -578,7 +589,7 @@ function RoundBlock({ roundName, ms, highlight, dayOffset, showDetails, fifaMap,
       </div>
       {roundDateStr && <div className="mx-rnd-date">{roundDateStr}</div>}
       <div className="mx-block-matches">
-        {ms.map((m,i)=>(
+        {sorted.map((m,i)=>(
           <MatchRow
             key={i} m={m}
             showDetails={showDetails}
@@ -604,15 +615,23 @@ export default function Matches({ matches, groups, onLiveChange }) {
   const [lineups,      setLineups]      = useState({})
   const [rankings,     setRankings]     = useState(null)  // abbr → FIFA rank position
   const [currentLiveIdx, setCurrentLiveIdx] = useState(0)
+  const [sidePanelMode,  setSidePanelMode]  = useState(false)
   const fetchedKeys = useRef(new Set())
 
-  // Cycle live games every 20s
+  // Cycle live games every 20s (single-game bottom-tile only)
   useEffect(() => {
     if (liveMatches.length<=1) return
     const t = setInterval(()=>setCurrentLiveIdx(i=>(i+1)%liveMatches.length), 20_000)
     return () => clearInterval(t)
   }, [liveMatches.length])
   useEffect(() => { setCurrentLiveIdx(0) }, [liveMatches.length])
+
+  // Side-panel mode: enter at 2+ live games, exit only when ALL finish
+  useEffect(() => {
+    if (liveMatches.length >= 2) setSidePanelMode(true)
+    else if (liveMatches.length === 0) setSidePanelMode(false)
+    // length===1: leave mode unchanged — keep side panels until both done
+  }, [liveMatches.length])
 
   // Fetch FIFA rankings (rarely changes — hourly is fine)
   useEffect(() => {
@@ -846,8 +865,8 @@ export default function Matches({ matches, groups, onLiveChange }) {
 
   return (
     <div className="mx-outer">
-      <div className={`mx-schedule-row${hasLive?' live-active':' no-live'}`}>
-        {hasLive ? (
+      <div className={`mx-schedule-row${sidePanelMode ? ' live-active' : hasLive ? '' : ' no-live'}`}>
+        {sidePanelMode ? (
           <>
             <LiveSidePanel
               liveMatch={liveMatches[0]||null}
@@ -891,6 +910,31 @@ export default function Matches({ matches, groups, onLiveChange }) {
           ))
         )}
       </div>
+
+      {hasLive && !sidePanelMode && (
+        <div className="mx-live-section">
+          <div className="mx-live-section-label">
+            <span className="mx-live-dot" />
+            LIVE NOW — {liveCount} match{liveCount>1?'es':''}
+            {liveCount>1 && (
+              <span className="mx-live-game-dots">
+                {liveMatches.map((_,i)=>(
+                  <button key={i} className={`mx-live-game-dot${i===safeIdx?' on':''}`}
+                    onClick={()=>setCurrentLiveIdx(i)} />
+                ))}
+              </span>
+            )}
+          </div>
+          {currentLive && (
+            <LiveMatchTile
+              key={currentLive.mk}
+              event={currentLive}
+              timeline={timelines[currentLive.mk]||[]}
+              lineup={lineups[currentLive.mk]}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
