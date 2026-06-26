@@ -1051,8 +1051,8 @@ body.tv-mode {
 
 .mx-center { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; align-self:stretch; width:70px; flex-shrink:0; }
 .mx-block.current .mx-center { width:90px; }
-.mx-cen-top { position:absolute; bottom:calc(50% + 3px); left:0; right:0; display:flex; flex-direction:column; align-items:center; gap:2px; overflow:hidden; }
-.mx-cen-bot { position:absolute; top:calc(50% + 3px); left:0; right:0; display:flex; flex-direction:column; align-items:center; overflow:hidden; }
+.mx-cen-top { position:absolute; bottom:calc(50% + 20px); left:0; right:0; display:flex; flex-direction:column; align-items:center; gap:2px; overflow:hidden; }
+.mx-cen-bot { position:absolute; top:calc(50% + 20px); left:0; right:0; display:flex; flex-direction:column; align-items:center; overflow:hidden; }
 .mx-score { font-family:'Space Mono',monospace; font-size:2.2vh; font-weight:700; color:#fff; text-align:center; text-shadow:0 0 20px rgba(125,211,252,0.7), 0 0 40px rgba(125,211,252,0.25); }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
 .mx-ft-badge {
