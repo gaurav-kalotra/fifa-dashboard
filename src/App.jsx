@@ -10,7 +10,7 @@ import Ticker from './components/Ticker'
 import './index.css'
 
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
-const TV_TABS = ['matches', 'schedule']
+const TV_TABS = ['matches', 'fixtures']
 const TV_INTERVAL_MS = 30_000
 
 const isTV = new URLSearchParams(window.location.search).get('tv') === '1'
@@ -43,8 +43,6 @@ function Stars() {
 // Official WC2026 logo (trophy + mosaic 26 pattern) — confirmed 342KB PNG
 // Official WC2026 transparent PNG logo (user-provided, confirmed 286KB)
 const WC_LOGO_PNG = 'https://city-png.b-cdn.net/preview/preview_public/uploads/preview/hd-official-fifa-world-cup-26-trophy-transparent-background-701751712076887htawzli3zs.png'
-// Background watermark — same logo, full Wikimedia emblem as fallback
-const WC_LOGO = WC_LOGO_PNG
 
 export default function App() {
   const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
@@ -105,7 +103,6 @@ export default function App() {
     return (
       <div className={`tv-frame${hasLive ? '' : ' no-live-idle'}`}>
         <Stars />
-        <img src={WC_LOGO} alt="" className="tv-bg-logo" aria-hidden="true" />
         <div className="tv-orb tv-orb-1" />
         <div className="tv-orb tv-orb-2" />
         <div className="tv-orb tv-orb-3" />
@@ -124,7 +121,7 @@ export default function App() {
             <div className="tv-tabs-indicator">
               {TV_TABS.map(t => (
                 <span key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}>
-                  {t === 'matches' ? 'MATCHES' : 'SCHEDULE'}
+                  {t === 'matches' ? 'MATCHES' : 'FIXTURES'}
                 </span>
               ))}
             </div>
@@ -135,7 +132,7 @@ export default function App() {
 
         <div className="tv-content" key={`c-${tab}`}>
           {tab === 'matches' && <Matches matches={matches} groups={groups} onLiveChange={setHasLive} />}
-          {tab === 'schedule' && <Schedule groups={groups} matches={matches} />}
+          {tab === 'fixtures' && <Schedule groups={groups} matches={matches} />}
         </div>
 
         <Ticker matches={matches} groups={groups} />
