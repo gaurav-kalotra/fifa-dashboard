@@ -506,6 +506,13 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
     ? predictMatch(rankings[ab(m.team1)], rankings[ab(m.team2)])
     : null
 
+  // Half-time detection
+  const isHT = isLive && (fifaInfo?.isHT || String(fifaInfo?.clock||'').trim().toUpperCase() === 'HT')
+  const clockRaw = fifaInfo?.clock || ''
+  const clockLabel = !isLive ? null
+    : isHT ? (clockRaw && clockRaw.toUpperCase() !== 'HT' ? `${clockRaw} HT` : 'HT')
+    : clockRaw || null
+
   return (
     <div className={`mx-row${played?' played':''}${isLive?' live':''}`}>
       {/* Home team cell */}
@@ -533,7 +540,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
               <span className="mx-live-green-dot" />LIVE
             </span>
           )}
-          {isLive && fifaInfo?.clock && <span className="mx-live-match-clock">{fifaInfo.clock}</span>}
+          {isLive && clockLabel && <span className={`mx-live-match-clock${isHT?' ht':''}`}>{clockLabel}</span>}
           {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
           {!isLive && !played && m.group && dayOffset === 0 && <span className="mx-match-group">{m.group}</span>}
           {!isLive && !played && localTime && <span className="mx-match-time">{localTime}</span>}
@@ -715,6 +722,8 @@ export default function Matches({ matches, groups, onLiveChange }) {
             mk: `espn:${ev.id}`, date: ev.date,
             venue: appendState([comp.venue?.fullName||comp.venue?.shortName, comp.venue?.address?.city||comp.venue?.city].filter(Boolean).join(', ')),
             state, clock: ev.status?.displayClock||'',
+            isHT: (ev.status?.type?.name||'').toLowerCase().includes('half')
+                  || (ev.status?.displayClock||'').toUpperCase() === 'HT',
             liveScore:  state==='in'   ? sc : null,
             postScore:  state==='post' ? sc : null,
           }
@@ -749,6 +758,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             })(),
             state,
             clock:     m.MatchTime || existing.clock || '',
+            isHT:      m.MatchTime === 'HT' || existing.isHT || false,
             liveScore: state==='in'   ? sc : null,
             postScore: state==='post' ? sc : null,
             _espnId:   existing._espnId || espnIds[key] || null,
@@ -768,8 +778,8 @@ export default function Matches({ matches, groups, onLiveChange }) {
           homeAbbr: a1, awayAbbr: a2,
           homeScore: entry.liveScore?.[0]??0,
           awayScore: entry.liveScore?.[1]??0,
-          clock: entry.clock||'?',
-          isHT:  entry.clock==='HT',
+          clock: entry.clock||'',
+          isHT:  entry.isHT || entry.clock?.toUpperCase() === 'HT',
         })
       }
       setLiveMatches(liveObjs)

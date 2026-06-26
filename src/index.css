@@ -1108,6 +1108,7 @@ body.tv-mode {
   to   { left:44px; }
 }
 .mx-live-match-clock { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(251,191,36,.9); text-align:center; letter-spacing:.03em; text-shadow:0 0 8px rgba(251,191,36,.4); }
+.mx-live-match-clock.ht { color:#3dffa0; text-shadow:0 0 8px rgba(61,255,160,.5); font-weight:700; letter-spacing:.08em; }
 .mx-block.current .mx-score { font-size:2.6vh; }
 .mx-vs { font-size:1.4vh; color:rgba(255,255,255,.55); text-shadow:0 0 8px rgba(255,255,255,.2); }
 .mx-block.current .mx-vs { font-size:1.7vh; }
