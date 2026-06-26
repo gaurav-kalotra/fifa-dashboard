@@ -607,7 +607,7 @@ body.tv-mode { overflow: hidden; }
   width: 100vw; height: 100vh;
   background: url('/assets/bg-stadium.jpg') center/cover no-repeat fixed;
   display: flex; flex-direction: column;
-  padding: 1.4vh 3.5vw 3.5vh;
+  padding: 2vh 5vw 3.5vh;
   position: relative; overflow: hidden;
 }
 
@@ -621,12 +621,10 @@ body.tv-mode { overflow: hidden; }
   );
 }
 
-/* Edge blur — only blurs background photo, not content above it */
+/* Edge vignette — pure CSS gradient, no backdrop-filter (performance) */
 .tv-frame::after {
   content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
-  backdrop-filter:blur(12px);
-  -webkit-mask-image:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, black 75%);
-  mask-image:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, black 75%);
+  background:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, rgba(0,0,0,.45) 75%);
 }
 
 /* Hide stars when we have a real background photo */
@@ -819,7 +817,6 @@ body.tv-mode { overflow: hidden; }
   background:rgba(255,255,255,.055);
   border:1px solid rgba(255,255,255,.12);
   border-top:2px solid rgba(251,191,36,.6);
-  backdrop-filter:blur(16px);
   box-shadow:0 8px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.07);
   border-radius:8px;
   animation:tv-card-in .5s cubic-bezier(.22,1,.36,1) both;
@@ -872,7 +869,7 @@ body.tv-mode { overflow: hidden; }
 .gb-mini-group {
   background:rgba(3,5,18,.82); border:1px solid rgba(96,165,250,.13);
   border-top:2px solid rgba(96,165,250,.38); border-radius:6px;
-  overflow:hidden; backdrop-filter:blur(10px);
+  overflow:hidden;
   animation:tv-card-in .5s cubic-bezier(.22,1,.36,1) both;
 }
 .gb-mini-group:nth-child(2){animation-delay:.03s} .gb-mini-group:nth-child(3){animation-delay:.06s}
@@ -902,7 +899,7 @@ body.tv-mode { overflow: hidden; }
 .gb-bk-card {
   background:rgba(3,5,18,.82); border:1px solid rgba(96,165,250,.13);
   border-left:2px solid rgba(96,165,250,.22); border-radius:6px;
-  padding:.45vh .7vw; backdrop-filter:blur(10px);
+  padding:.45vh .7vw;
   display:flex; flex-direction:column; justify-content:center; gap:.25vh;
   animation:tv-card-in .5s cubic-bezier(.22,1,.36,1) both;
 }
@@ -962,10 +959,9 @@ body.tv-mode { overflow: hidden; }
   flex:1; min-width:0;
   background:rgba(3,6,18,.38); border:1px solid rgba(255,255,255,.12);
   border-top:2px solid rgba(255,255,255,.18); border-radius:8px;
-  overflow:hidden; backdrop-filter:blur(18px) saturate(1.2);
+  overflow:hidden;
   display:flex; flex-direction:column;
   animation:tv-card-in .5s cubic-bezier(.22,1,.36,1) both;
-  opacity:0.78;
 }
 /* Current matchday block */
 .mx-block.current {
@@ -1141,7 +1137,7 @@ body.tv-mode { overflow: hidden; }
   flex:1; min-height:0;
   background:rgba(3,18,10,.9); border:1px solid rgba(61,255,160,.18);
   border-top:2px solid rgba(61,255,160,.25); border-radius:8px;
-  overflow:hidden; backdrop-filter:blur(12px);
+  overflow:hidden;
   display:flex; flex-direction:column;
   box-shadow:0 0 24px rgba(61,255,160,.06), inset 0 1px 0 rgba(61,255,160,.08);
   animation:tv-card-in .5s cubic-bezier(.22,1,.36,1) both;
@@ -1335,7 +1331,6 @@ body.tv-mode { overflow: hidden; }
 .sch-group {
   background:rgba(3,6,18,.38);
   border:1px solid rgba(255,255,255,.12);
-  backdrop-filter:blur(10px) saturate(1.1);
   border-left:3px solid rgba(251,191,36,.5);
   border-radius:4px; overflow:hidden; flex:1; min-height:0;
 }
@@ -1427,16 +1422,16 @@ body.tv-mode { overflow: hidden; }
 /* Group table row spotlight */
 /* Glow pulses with ~1s hold at peak (40%→60% both at max) */
 @keyframes sch-spot-green-pulse {
-  0%,25%,75%,100% { background:rgba(74,222,128,.0); box-shadow:none; }
-  40%,60%         { background:rgba(74,222,128,.18); box-shadow:inset 0 0 0 1.5px rgba(74,222,128,.7), 0 0 10px rgba(74,222,128,.25); }
+  0%,25%,75%,100% { background:rgba(74,222,128,.0); }
+  40%,60%         { background:rgba(74,222,128,.2); }
 }
 @keyframes sch-spot-red-pulse {
-  0%,25%,75%,100% { background:rgba(248,113,113,.0); box-shadow:none; }
-  40%,60%         { background:rgba(248,113,113,.18); box-shadow:inset 0 0 0 1.5px rgba(248,113,113,.7), 0 0 10px rgba(248,113,113,.25); }
+  0%,25%,75%,100% { background:rgba(248,113,113,.0); }
+  40%,60%         { background:rgba(248,113,113,.2); }
 }
 @keyframes sch-spot-elim-pulse {
-  0%,25%,75%,100% { background:rgba(139,0,0,.0); box-shadow:none; }
-  40%,60%         { background:rgba(139,0,0,.3); box-shadow:inset 0 0 0 2px rgba(255,50,50,.9), 0 0 18px rgba(255,50,50,.4); }
+  0%,25%,75%,100% { background:rgba(139,0,0,.0); }
+  40%,60%         { background:rgba(139,0,0,.35); }
 }
 /* Jitter burst during hold phase (38%→62%) on the specific spotted row only */
 @keyframes bk-name-jitter {
@@ -1456,22 +1451,35 @@ body.tv-mode { overflow: hidden; }
 .sch-spot-green .sch-td-team span, .sch-spot-red .sch-td-team span { animation:bk-name-jitter 3s ease-in-out infinite; }
 .sch-spot-elim  .sch-td-team span                                   { animation:bk-name-jitter 2s ease-in-out infinite; }
 
-/* Bracket slot win (green) / lose (red) / elimination (dramatic) spotlight — hold at peak */
-@keyframes bk-win-pulse {
-  0%,20%,80%,100% { border-color:rgba(74,222,128,.2); box-shadow:none; background:transparent; }
-  40%,60%         { border-color:rgba(74,222,128,1); box-shadow:0 0 24px 6px rgba(74,222,128,.6), 0 0 48px 12px rgba(74,222,128,.2), inset 0 0 12px rgba(74,222,128,.15); background:rgba(74,222,128,.06); }
+/* Bracket slot glow — ::before with opacity-only animation (GPU-composited, no repaint) */
+.bk-slot { position:relative; }
+@keyframes bk-glow-fade {
+  0%,20%,80%,100% { opacity:0; }
+  40%,60%         { opacity:1; }
 }
-@keyframes bk-lose-pulse {
-  0%,20%,80%,100% { border-color:rgba(248,113,113,.2); box-shadow:none; background:transparent; }
-  40%,60%         { border-color:rgba(248,113,113,1); box-shadow:0 0 24px 6px rgba(248,113,113,.6), 0 0 48px 12px rgba(248,113,113,.2), inset 0 0 12px rgba(248,113,113,.15); background:rgba(248,113,113,.06); }
+.bk-slot.bk-win-spot::before,
+.bk-slot.bk-lose-spot::before,
+.bk-slot.bk-elim-spot::before {
+  content:''; position:absolute; inset:-1px; border-radius:3px;
+  pointer-events:none; will-change:opacity;
+  animation:bk-glow-fade 3s ease-in-out infinite;
 }
-@keyframes bk-elim-pulse {
-  0%,20%,80%,100% { border-color:rgba(220,30,30,.2); box-shadow:none; background:rgba(3,6,18,.52); }
-  40%,60%         { border-color:rgba(255,60,60,1); box-shadow:0 0 30px 8px rgba(255,30,30,.7), 0 0 60px 16px rgba(255,30,30,.25), inset 0 0 16px rgba(255,0,0,.25); background:rgba(60,0,0,.4); }
+.bk-slot.bk-elim-spot::before { animation-duration:2s; }
+.bk-slot.bk-win-spot::before {
+  border:1.5px solid rgba(74,222,128,1);
+  box-shadow:0 0 24px 6px rgba(74,222,128,.6), 0 0 48px 12px rgba(74,222,128,.2), inset 0 0 12px rgba(74,222,128,.15);
+  background:rgba(74,222,128,.06);
 }
-.bk-slot.bk-win-spot  { animation:bk-win-pulse  3s ease-in-out infinite; }
-.bk-slot.bk-lose-spot { animation:bk-lose-pulse 3s ease-in-out infinite; }
-.bk-slot.bk-elim-spot { animation:bk-elim-pulse 2s ease-in-out infinite; }
+.bk-slot.bk-lose-spot::before {
+  border:1.5px solid rgba(248,113,113,1);
+  box-shadow:0 0 24px 6px rgba(248,113,113,.6), 0 0 48px 12px rgba(248,113,113,.2), inset 0 0 12px rgba(248,113,113,.15);
+  background:rgba(248,113,113,.06);
+}
+.bk-slot.bk-elim-spot::before {
+  border:1.5px solid rgba(255,60,60,1);
+  box-shadow:0 0 30px 8px rgba(255,30,30,.7), 0 0 60px 16px rgba(255,30,30,.25), inset 0 0 16px rgba(255,0,0,.25);
+  background:rgba(60,0,0,.4);
+}
 /* Jitter only the specific spotted team row (bk-jitter-row), not all bk-name in the card */
 .bk-slot.bk-win-spot  .bk-jitter-row .bk-name,
 .bk-slot.bk-lose-spot .bk-jitter-row .bk-name { animation:bk-name-jitter 3s ease-in-out infinite; }
@@ -1503,7 +1511,7 @@ body.tv-mode { overflow: hidden; }
 .bk-row  { display:flex; align-items:center; gap:.3vw; font-size:1.2vh; color:rgba(247,245,240,.88); }
 .bk-row.win { color:#3dffa0; text-shadow:0 0 8px rgba(61,255,160,.35); }
 .bk-flag { width:14px; height:9px; object-fit:cover; border-radius:1px; border:1px solid rgba(255,255,255,.1); flex-shrink:0; }
-.bk-name { flex:1; font-family:'Inter',system-ui,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+.bk-name { flex:1; font-family:'Inter',system-ui,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; display:inline-block; will-change:transform; }
 .bk-s    { font-family:'Space Mono',monospace; font-size:1.2vh; font-weight:700; color:#fff; flex-shrink:0; }
 
 /* Final */
