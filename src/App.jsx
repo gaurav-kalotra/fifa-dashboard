@@ -111,12 +111,13 @@ export default function App() {
 
         <div className="tv-header">
           <div className="tv-header-center">
-            <div className="tv-title-block">
-              <img src={WC_LOGO_PNG} alt="FIFA World Cup 2026" className="tv-trophy-img" />
-              <div>
-                <div className="tv-title">FIFA World Cup 2026</div>
-                <div className="tv-subtitle"><span>UNITED STATES</span><span className="tv-sub-dot">·</span><span>CANADA</span><span className="tv-sub-dot">·</span><span>MEXICO</span></div>
-              </div>
+            <div className="tv-title-row">
+              <img src={WC_LOGO_PNG} alt="" className="tv-trophy-img" aria-hidden="true" />
+              <div className="tv-title">FIFA World Cup 2026</div>
+              <img src={WC_LOGO_PNG} alt="" className="tv-trophy-img" aria-hidden="true" />
+            </div>
+            <div className="tv-subtitle">
+              <span>UNITED STATES</span><span className="tv-sub-dot">·</span><span>CANADA</span><span className="tv-sub-dot">·</span><span>MEXICO</span>
             </div>
             <div className="tv-tabs-indicator">
               {TV_TABS.map(t => (

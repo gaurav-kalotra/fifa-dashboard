@@ -702,9 +702,9 @@ body.tv-mode { overflow: hidden; }
   flex-shrink:0; position:relative; z-index:1;
 }
 .tv-header-center {
-  flex:1; display:flex; flex-direction:column; align-items:center; gap:.35vh;
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:.4vh;
 }
-.tv-title-block { display:flex; align-items:center; gap:1vw; }
+.tv-title-row { display:flex; align-items:center; justify-content:center; gap:1.2vw; }
 .tv-tabs-indicator { display:flex; gap:4vw; align-items:center; }
 
 .tv-trophy { font-size:clamp(20px,3.2vh,40px); filter:drop-shadow(0 0 16px rgba(251,191,36,0.85)) drop-shadow(0 0 6px rgba(251,191,36,0.5)); animation:trophy-bob 3s ease-in-out infinite; }
@@ -1392,8 +1392,7 @@ body.tv-mode { overflow: hidden; }
 
 /* Match card */
 .bk-slot {
-  background:rgba(3,6,18,.38);
-  backdrop-filter:blur(18px) saturate(1.2);
+  background:rgba(3,6,18,.5);
   border:none; border-left:2px solid rgba(255,255,255,.15);
   border-radius:3px; padding:.35vh .4vw;
   display:flex; flex-direction:column; gap:.15vh;
