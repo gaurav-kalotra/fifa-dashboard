@@ -597,9 +597,9 @@ body.tv-mode { overflow: hidden; }
   /* WC2026 brand palette */
   --gold:   #fbbf24;
   --red:    #E61D25;
-  --blue:   #4472D4;
+  --blue:   #7dd3fc;
   --green:  #3CAC3B;
-  --cyan:   #4472D4;
+  --cyan:   #7dd3fc;
   --violet: #E61D25;
   --card:   rgba(5,8,16,0.58);
   --border: rgba(255,255,255,0.13);
@@ -746,7 +746,7 @@ body.tv-mode { overflow: hidden; }
 /* Progress bar: cyan → gold */
 .tv-progress {
   height:2px; flex-shrink:0; width:100%;
-  background:linear-gradient(90deg, transparent 0%, #4472D4 20%, #E61D25 50%, #4472D4 80%, transparent 100%);
+  background:linear-gradient(90deg, transparent 0%, #7dd3fc 20%, #E61D25 50%, #7dd3fc 80%, transparent 100%);
   transform:scaleX(0); transform-origin:50% 50%;
   animation:tv-progress 30s linear both;
   position:relative; z-index:1;
@@ -795,7 +795,7 @@ body.tv-mode { overflow: hidden; }
 }
 .ticker-item.upcoming { color:rgba(255,255,255,0.45); }
 .ticker-item.stat     { color:#fff; }
-.ticker-item.qual     { color:#4472D4; text-shadow:0 0 12px rgba(68,114,212,0.5); }
+.ticker-item.qual     { color:#7dd3fc; text-shadow:0 0 12px rgba(125,211,252,0.5); }
 .ticker-item.danger   { color:#fca5a5; text-shadow:0 0 10px rgba(248,113,113,0.4); }
 .ticker-item.record   { color:#fbbf24; text-shadow:0 0 16px rgba(251,191,36,0.5); }
 .ticker-item-icon { font-size:1.45vh; line-height:1; flex-shrink:0; }
@@ -850,7 +850,7 @@ body.tv-mode { overflow: hidden; }
 .tv-frame .game-score { font-family:'Space Mono',monospace; font-size:1.75vh; font-weight:700; color:#fff; text-shadow:0 0 12px rgba(34,211,238,.55); }
 .tv-frame .game-row.upcoming .game-score { color:rgba(255,255,255,.22); font-family:'Inter',system-ui,sans-serif; font-weight:400; font-size:1.4vh; text-shadow:none; }
 .tv-frame .game-team { color:rgba(255,255,255,.9); }
-.tv-frame .game-team.gw { color:#4472D4; font-weight:600; text-shadow:0 0 14px rgba(68,114,212,.6); }
+.tv-frame .game-team.gw { color:#7dd3fc; font-weight:600; text-shadow:0 0 14px rgba(125,211,252,.6); }
 
 /* Groups + Bracket combined */
 .gb-layout { display:flex; height:100%; gap:0; }
@@ -931,7 +931,7 @@ body.tv-mode { overflow: hidden; }
 
 /* Standings + Bracket tabs (non-TV mode) */
 .tv-frame .groups-grid { grid-template-columns:repeat(3,1fr); gap:1.2vh; }
-.tv-frame .group-header { font-family:'Oswald',system-ui,sans-serif; font-size:1.35vh; font-weight:600; color:#4472D4; letter-spacing:.1em; padding:.7vh 1.2vw; background:rgba(68,114,212,.06); border-bottom:1px solid rgba(68,114,212,.15); }
+.tv-frame .group-header { font-family:'Oswald',system-ui,sans-serif; font-size:1.35vh; font-weight:600; color:#7dd3fc; letter-spacing:.1em; padding:.7vh 1.2vw; background:rgba(125,211,252,.06); border-bottom:1px solid rgba(125,211,252,.15); }
 .tv-frame .standings-table { font-size:1.45vh; font-family:'Inter',system-ui,sans-serif; }
 .tv-frame .standings-table td,.tv-frame .standings-table th { padding:.55vh .8vw; }
 .tv-frame .standings-table th { color:rgba(96,165,250,.55); }
@@ -1049,7 +1049,7 @@ body.tv-mode { overflow: hidden; }
 
 .mx-center { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:70px; flex-shrink:0; }
 .mx-block.current .mx-center { width:90px; }
-.mx-score { font-family:'Space Mono',monospace; font-size:2.2vh; font-weight:700; color:#fff; text-align:center; text-shadow:0 0 20px rgba(68,114,212,0.7), 0 0 40px rgba(68,114,212,0.25); }
+.mx-score { font-family:'Space Mono',monospace; font-size:2.2vh; font-weight:700; color:#fff; text-align:center; text-shadow:0 0 20px rgba(125,211,252,0.7), 0 0 40px rgba(125,211,252,0.25); }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
 .mx-ft-badge {
   font-family:'Space Mono',monospace; font-size:.75vh; letter-spacing:.12em;
@@ -1080,7 +1080,7 @@ body.tv-mode { overflow: hidden; }
 }
 .mx-live-slider::after {
   content:''; position:absolute; top:0; bottom:0; width:20px;
-  background:linear-gradient(90deg, transparent, #E61D25 40%, #4472D4 60%, transparent);
+  background:linear-gradient(90deg, transparent, #E61D25 40%, #7dd3fc 60%, transparent);
   animation:live-slide-bar 2.0s ease-in-out infinite alternate;
   left:-20px;
 }
@@ -1101,8 +1101,8 @@ body.tv-mode { overflow: hidden; }
 }
 .mx-match-time {
   font-family:'Space Mono',monospace; font-size:1.05vh;
-  color:rgba(68,114,212,1); line-height:1;
-  text-shadow:0 0 10px rgba(68,114,212,.6);
+  color:#fbbf24; line-height:1;
+  text-shadow:0 0 10px rgba(251,191,36,.5);
 }
 .mx-match-venue {
   font-family:'Inter',system-ui,sans-serif; font-size:0.85vh;
