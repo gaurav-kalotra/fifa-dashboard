@@ -4,15 +4,25 @@ import { ab, flagUrl } from '../utils'
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
 const ESPN_ATHLETE = id =>
   `https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/${id}?lang=en&region=us`
-const TSDB_PHOTO = name =>
-  `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`
+const TSDB_SEARCH = q =>
+  `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(q)}`
 
-async function fetchPlayerPhoto(name) {
+function stripDiacritics(str) {
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+async function tsdbLookup(query) {
+  const r = await fetch(TSDB_SEARCH(query))
+  const d = await r.json()
+  const p = d.player?.[0]
+  return p?.strCutout || p?.strThumb || null
+}
+
+async function fetchPlayerPhoto(rawName) {
   try {
-    const r = await fetch(TSDB_PHOTO(name))
-    const d = await r.json()
-    const p = d.player?.[0]
-    return p?.strCutout || p?.strThumb || null
+    const name = stripDiacritics(rawName)
+    // Try full name first, then last name only
+    return (await tsdbLookup(name)) || (await tsdbLookup(name.split(' ').pop()))
   } catch { return null }
 }
 
