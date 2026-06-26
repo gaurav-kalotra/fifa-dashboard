@@ -1233,8 +1233,13 @@ body.tv-mode {
   color:rgba(61,255,160,.8); margin-left:.2vw;
 }
 .mx-side-coach {
-  font-family:'Inter',system-ui,sans-serif; font-size:.9vh;
-  color:rgba(247,245,240,.45); text-align:center; padding:.3vh .6vw; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; gap:4px;
+  margin:.3vh .6vw; padding:2px 8px;
+  background:rgba(22,8,50,.7);
+  border:1px solid rgba(167,139,250,.35); border-radius:4px;
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:clamp(8px,.9vh,11px); font-weight:600;
+  color:rgba(196,181,253,.9); white-space:nowrap; flex-shrink:0;
 }
 .mx-live-divider {
   width:2px; background:rgba(255,255,255,.18); flex-shrink:0;
@@ -1429,6 +1434,42 @@ body.tv-mode {
   position:absolute; bottom:-3px; right:-4px;
   font-size:clamp(8px,.9vh,11px); color:#fbbf24; line-height:1;
 }
+/* Goal + card overlay for vertical-pitch players */
+.mx-vp-events {
+  position:absolute; top:-5px; right:-7px;
+  display:flex; flex-direction:column; align-items:flex-end; gap:1px; z-index:3;
+}
+.mx-vp-evt-ball {
+  font-size:clamp(8px,1.1vh,14px); line-height:1;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.9));
+}
+
+/* Coach cards — vertical pitch */
+.mx-vp-coach {
+  position:absolute; transform:translate(-50%,-50%);
+  display:flex; align-items:center; gap:3px;
+  background:rgba(22,8,50,.88);
+  border:1px solid rgba(167,139,250,.45);
+  border-radius:4px; padding:2px 6px;
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:clamp(6px,.82vh,10px); font-weight:600;
+  color:rgba(196,181,253,.95); white-space:nowrap; z-index:3;
+}
+.mx-vp-coach-ic { font-size:1em; }
+.mx-vp-coach-nm { letter-spacing:.02em; }
+
+/* Coach card — horizontal half-pitch */
+.mx-half-coach {
+  position:absolute; bottom:8%; display:flex; align-items:center; gap:3px;
+  background:rgba(22,8,50,.88);
+  border:1px solid rgba(167,139,250,.45);
+  border-radius:4px; padding:2px 6px;
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:clamp(7px,.88vh,11px); font-weight:600;
+  color:rgba(196,181,253,.95); white-space:nowrap; z-index:3;
+}
+.mx-half-coach.home { left:3%; }
+.mx-half-coach.away { right:3%; }
 
 /* Subs strip below pitch */
 .mx-lsp-subs {

@@ -285,16 +285,22 @@ function PitchPlayer({ player, x, y }) {
   )
 }
 
-function HalfPitch({ players, side='home' }) {
+function HalfPitch({ players, side='home', coach='' }) {
   const colX = side==='home' ? COL_X_HOME : COL_X_AWAY
   const cols = [[],[],[],[]]
   for (const p of players) cols[Math.min(posRow(p.pos),3)].push(p)
+  const coachLastName = (coach||'').trim().split(/\s+/).slice(-1)[0]
   return (
     <div className={`mx-half-pitch ${side}`}>
       {cols.map((col,ci)=>col.map((p,i)=>{
         const n=col.length, x=colX[ci], y=n<=1?50:15+(i/(n-1))*70
         return <PitchPlayer key={p.id||`${ci}-${i}`} player={p} x={x} y={y} />
       }))}
+      {coachLastName && (
+        <div className={`mx-half-coach ${side}`}>
+          <span>🧥</span>{coachLastName}
+        </div>
+      )}
     </div>
   )
 }
@@ -306,22 +312,35 @@ const AWAY_COL_Y = [58, 43, 29, 15]  // ATT→MID→DEF→GK (away GK at top)
 const HOME_COL_Y = [42, 57, 71, 85]  // ATT→MID→DEF→GK (home GK at bottom)
 
 function VPlayer({ player, x, y }) {
-  const jerseyName = player.name ? player.name.split(/\s+/).slice(-1)[0] : player.jersey
-  const hasEvts = (player.goals>0)||(player.yellows>0)||(player.reds>0)
+  const hasGoal = player.goals > 0
+  const hasCard = player.yellows > 0 || player.reds > 0
   return (
     <div className="mx-vp" style={{left:`${x}%`,top:`${y}%`}}>
       <div className="mx-vp-badge">
         <span className="mx-vp-num">{player.jersey}</span>
-        {hasEvts && (
-          <div className="mx-pp-events">
-            {Array.from({length:player.goals}).map((_,i)=><span key={`g${i}`} className="mx-pp-evt-ball">⚽</span>)}
+        {(hasGoal || hasCard) && (
+          <div className="mx-vp-events">
+            {Array.from({length:player.goals}).map((_,i)=>(
+              <span key={i} className="mx-vp-evt-ball">⚽</span>
+            ))}
             {player.yellows>0 && <span className="mx-pp-evt-card yellow" />}
             {player.reds>0    && <span className="mx-pp-evt-card red" />}
           </div>
         )}
         {player.subbedOff && <span className="mx-vp-suboff">↓</span>}
       </div>
-      <span className="mx-vp-name">{jerseyName}</span>
+      <span className="mx-vp-name">{player.name || player.jersey}</span>
+    </div>
+  )
+}
+
+function VCoach({ name, y }) {
+  const lastName = (name||'').trim().split(/\s+/).slice(-1)[0]
+  if (!lastName) return null
+  return (
+    <div className="mx-vp-coach" style={{left:'50%', top:`${y}%`}}>
+      <span className="mx-vp-coach-ic">🧥</span>
+      <span className="mx-vp-coach-nm">{lastName}</span>
     </div>
   )
 }
@@ -359,18 +378,25 @@ function LiveSidePanel({ liveMatch, timeline, lineup }) {
         </div>
       </div>
       <div className="mx-vpitch">
-        <div className="mx-vp-tlabel top">
+        {/* Team / formation labels at very edges */}
+        <div className="mx-vp-tlabel" style={{top:'2%',left:'50%',transform:'translateX(-50%)'}}>
           <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag sm" onError={e=>{e.target.style.display='none'}} />
           <span>{awayAbbr}</span>
           {lineup?.awayFormation && <span className="mx-vp-fmtn">{lineup.awayFormation}</span>}
         </div>
-        <div className="mx-vp-tlabel bot">
+        <div className="mx-vp-tlabel" style={{bottom:'2%',left:'50%',transform:'translateX(-50%)'}}>
           <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag sm" onError={e=>{e.target.style.display='none'}} />
           <span>{homeAbbr}</span>
           {lineup?.homeFormation && <span className="mx-vp-fmtn">{lineup.homeFormation}</span>}
         </div>
+
+        {/* Coach cards, just inside each team's goal end */}
+        {lineup?.awayCoach && <VCoach name={lineup.awayCoach} y={8} />}
+        {lineup?.homeCoach && <VCoach name={lineup.homeCoach} y={92} />}
+
         <div className="mx-vp-half" />
         <div className="mx-vp-dot" />
+
         {awayCols.map((col,ci)=>col.map((p,i)=>(
           <VPlayer key={`a${p.id||`${ci}-${i}`}`} player={p} x={spreadX(i,col.length)} y={AWAY_COL_Y[ci]} />
         )))}
@@ -423,7 +449,7 @@ function LiveMatchTile({ event, timeline, lineup }) {
             {lineup?.homeFormation && <span className="mx-side-fmtn">{lineup.homeFormation}</span>}
           </div>
           {homePlayers.length>0
-            ? <HalfPitch players={homePlayers} />
+            ? <HalfPitch players={homePlayers} coach={lineup?.homeCoach||''} />
             : <div className="mx-no-lineup">
                 {homeEvts.length>0
                   ? homeEvts.map((e,i)=><div key={i} className="mx-no-lineup-evt"><EventIcon type={e.type}/><span className="mx-nle-player">{e.player}</span>{e.min&&<span className="mx-nle-min">{e.min}'</span>}</div>)
@@ -439,7 +465,7 @@ function LiveMatchTile({ event, timeline, lineup }) {
             <img src={flagUrl(awayAbbr)} alt="" className="mx-side-flag" onError={e=>{e.target.style.display='none'}} />
           </div>
           {awayPlayers.length>0
-            ? <HalfPitch players={awayPlayers} side="away" />
+            ? <HalfPitch players={awayPlayers} side="away" coach={lineup?.awayCoach||''} />
             : <div className="mx-no-lineup">
                 {awayEvts.length>0
                   ? awayEvts.map((e,i)=><div key={i} className="mx-no-lineup-evt">{e.min&&<span className="mx-nle-min">{e.min}'</span>}<span className="mx-nle-player">{e.player}</span><EventIcon type={e.type}/></div>)
