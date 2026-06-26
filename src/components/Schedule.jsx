@@ -30,19 +30,20 @@ function groupOf(m) { return m?.group?.replace(/^Group\s+/i, '').toUpperCase() |
 
 // Build winner/runner-up slot map from R32 match data
 // openfootball uses codes: "1A" = Winner Group A, "2B" = Runner-up Group B
+// Returns { winSlot: { A: {num, pos} }, rupSlot: {...} } where pos=1|2 (team1/team2 row)
 function buildGroupToSlot(byNum) {
   const winSlot = {}
   const rupSlot = {}
   for (const num of [...LEFT.r32, ...RIGHT.r32]) {
     const m = byNum[num]
     if (!m) continue
-    for (const t of [m.team1, m.team2]) {
-      if (!t) continue
+    ;[m.team1, m.team2].forEach((t, i) => {
+      if (!t) return
       const w = t.match(/^1([A-L])$/i)
       const r = t.match(/^2([A-L])$/i)
-      if (w) winSlot[w[1].toUpperCase()] = num
-      if (r) rupSlot[r[1].toUpperCase()] = num
-    }
+      if (w) winSlot[w[1].toUpperCase()] = { num, pos: i + 1 }
+      if (r) rupSlot[r[1].toUpperCase()] = { num, pos: i + 1 }
+    })
   }
   return { winSlot, rupSlot }
 }
@@ -95,7 +96,7 @@ function fmtDate(dateStr) {
 }
 
 // ── Individual bracket match card ─────────────────────────────
-function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isGreenSpot = false, isRedSpot = false, isElimSpot = false }) {
+function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isGreenSpot = false, isRedSpot = false, isElimSpot = false, greenSpotRow = 0, redSpotRow = 0, elimSpotRow = 0 }) {
   const m = byNum[num]
   if (!m) {
     let cls = 'bk-slot empty'
@@ -123,18 +124,21 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isG
   else if (isToday) cls += ' bk-today'
   else if (isPotential) cls += ' bk-potential'
 
+  const jitter1 = greenSpotRow === 1 || redSpotRow === 1 || elimSpotRow === 1
+  const jitter2 = greenSpotRow === 2 || redSpotRow === 2 || elimSpotRow === 2
+
   return (
     <div className={cls}>
       <div className="bk-snum-row">
         <span className="bk-snum">M{num}</span>
         {dateStr && <span className="bk-date">{dateStr}</span>}
       </div>
-      <div className={`bk-row${win1 ? ' win' : ''}`}>
+      <div className={`bk-row${win1 ? ' win' : ''}${jitter1 ? ' bk-jitter-row' : ''}`}>
         <Flag name={t1} cls="bk-flag" />
         <span className="bk-name">{t1 ? ab(t1) : m.team1}</span>
         {played && <span className="bk-s">{s1}</span>}
       </div>
-      <div className={`bk-row${win2 ? ' win' : ''}`}>
+      <div className={`bk-row${win2 ? ' win' : ''}${jitter2 ? ' bk-jitter-row' : ''}`}>
         <Flag name={t2} cls="bk-flag" />
         <span className="bk-name">{t2 ? ab(t2) : m.team2}</span>
         {played && <span className="bk-s">{s2}</span>}
@@ -162,7 +166,11 @@ function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums, gre
   const card = num => (
     <BkCard num={num} byNum={byNum} resolve={resolve}
       isToday={todayNums.has(num)} isPotential={potentialNums.has(num)}
-      isGreenSpot={greenSlots.has(num)} isRedSpot={redSlots.has(num)} isElimSpot={elimSlots.has(num)} />
+      isGreenSpot={greenSlots.has(num)} isRedSpot={redSlots.has(num)} isElimSpot={elimSlots.has(num)}
+      greenSpotRow={greenSlots.get(num) || 0}
+      redSpotRow={redSlots.get(num) || 0}
+      elimSpotRow={elimSlots.get(num) || 0}
+    />
   )
 
   return (
@@ -305,9 +313,10 @@ export default function Schedule({ groups, matches }) {
     const pair = spotlightPairs[spot.pairIdx]
     const { winSlot, rupSlot } = slotMap
     const spotlight = {}   // { [teamName]: 'green'|'red'|'elim' }
-    const greenSlots = new Set()
-    const redSlots   = new Set()
-    const elimSlots  = new Set()
+    // Maps: matchNum → row position (1=team1 row, 2=team2 row) for targeted jitter
+    const greenSlots = new Map()
+    const redSlots   = new Map()
+    const elimSlots  = new Map()
 
     for (const side of ['left', 'right']) {
       const m = pair?.[side]
@@ -319,10 +328,10 @@ export default function Schedule({ groups, matches }) {
       const isElim = loserEntry && loserEntry.pts === 0 && loserEntry.p >= 2
       spotlight[winner] = 'green'
       spotlight[loser]  = isElim ? 'elim' : 'red'
-      if (winSlot[g]) greenSlots.add(winSlot[g])
+      if (winSlot[g]) greenSlots.set(winSlot[g].num, winSlot[g].pos)
       if (rupSlot[g]) {
-        if (isElim) elimSlots.add(rupSlot[g])
-        else        redSlots.add(rupSlot[g])
+        if (isElim) elimSlots.set(rupSlot[g].num, rupSlot[g].pos)
+        else        redSlots.set(rupSlot[g].num, rupSlot[g].pos)
       }
     }
     return { spotlight, greenSlots, redSlots, elimSlots }
@@ -343,9 +352,9 @@ export default function Schedule({ groups, matches }) {
     return { todayNums, potentialNums }
   }, [matches])
 
-  const gs  = spotlightInfo?.greenSlots || new Set()
-  const rs  = spotlightInfo?.redSlots   || new Set()
-  const es  = spotlightInfo?.elimSlots  || new Set()
+  const gs  = spotlightInfo?.greenSlots || new Map()
+  const rs  = spotlightInfo?.redSlots   || new Map()
+  const es  = spotlightInfo?.elimSlots  || new Map()
   const sp  = spotlightInfo?.spotlight  || {}
 
   return (
