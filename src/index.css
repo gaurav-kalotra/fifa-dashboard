@@ -590,7 +590,11 @@ body {
 }
 
 /* ── TV / Screensaver mode (?tv=1) ───────────────────── */
-body.tv-mode { overflow: hidden; }
+body.tv-mode {
+  overflow: hidden;
+  /* Background on body — painted once, never invalidated by child animations */
+  background: url('/assets/bg-stadium.jpg') center/cover no-repeat;
+}
 
 /* ── Premium broadcast theme ──────────────────────────── */
 .tv-frame {
@@ -605,7 +609,7 @@ body.tv-mode { overflow: hidden; }
   --border: rgba(255,255,255,0.13);
   --text:   rgba(255,255,255,0.92);
   width: 100vw; height: 100vh;
-  background: url('/assets/bg-stadium.jpg') center/cover no-repeat fixed;
+  background: transparent;
   display: flex; flex-direction: column;
   padding: 2vh 5vw 3.5vh;
   position: relative; overflow: hidden;
@@ -627,8 +631,11 @@ body.tv-mode { overflow: hidden; }
   background:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, rgba(0,0,0,.45) 75%);
 }
 
-/* Hide stars when we have a real background photo */
+/* Hide stars + decorative orbs (each orb = 1 compositor layer) */
 .stars-layer { display:none; }
+.tv-orb      { display:none; }
+/* Bloom: static gradient, no animation */
+.tv-bloom    { animation:none; opacity:.7; }
 
 /* Ambient orbs — WC2026 palette, toned down over real photo */
 .tv-orb { position:absolute; border-radius:50%; pointer-events:none; z-index:0; will-change:transform; }
@@ -732,7 +739,7 @@ body.tv-mode { overflow: hidden; }
   color:#fbbf24;
   text-shadow:0 0 18px rgba(251,191,36,0.7);
 }
-@keyframes live-blink { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.5)} 50%{box-shadow:0 0 0 7px rgba(74,222,128,0)} }
+@keyframes live-blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(1.4)} }
 
 /* Progress bar: cyan → gold */
 .tv-progress {
@@ -832,7 +839,7 @@ body.tv-mode { overflow: hidden; }
 .tv-frame .games-group-card:nth-child(10),.tv-frame .group-card:nth-child(10){animation-delay:.36s}
 .tv-frame .games-group-card:nth-child(11),.tv-frame .group-card:nth-child(11){animation-delay:.40s}
 .tv-frame .games-group-card:nth-child(12),.tv-frame .group-card:nth-child(12){animation-delay:.44s}
-@keyframes tv-card-in { from{opacity:0;transform:translateY(14px) scale(.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+@keyframes tv-card-in { from{opacity:1} to{opacity:1} }
 
 /* Games tab */
 .tv-frame .games-grid { grid-template-columns:repeat(4,1fr); gap:1.2vh; }
@@ -1002,8 +1009,8 @@ body.tv-mode { overflow: hidden; }
   animation:live-row-glow 2.2s ease-in-out infinite;
 }
 @keyframes live-row-glow {
-  0%,100% { background:rgba(96,165,250,.04); box-shadow:none; }
-  50%     { background:rgba(96,165,250,.14); box-shadow:inset 0 0 0 1px rgba(61,255,160,.18); }
+  0%,100% { background:rgba(96,165,250,.04); }
+  50%     { background:rgba(96,165,250,.16); }
 }
 
 /* No-live mode: rows fill the full card height evenly */
@@ -1511,7 +1518,8 @@ body.tv-mode { overflow: hidden; }
 .bk-row  { display:flex; align-items:center; gap:.3vw; font-size:1.2vh; color:rgba(247,245,240,.88); }
 .bk-row.win { color:#3dffa0; text-shadow:0 0 8px rgba(61,255,160,.35); }
 .bk-flag { width:14px; height:9px; object-fit:cover; border-radius:1px; border:1px solid rgba(255,255,255,.1); flex-shrink:0; }
-.bk-name { flex:1; font-family:'Inter',system-ui,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; display:inline-block; will-change:transform; }
+.bk-name { flex:1; font-family:'Inter',system-ui,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; display:inline-block; }
+.bk-jitter-row .bk-name { will-change:transform; }
 .bk-s    { font-family:'Space Mono',monospace; font-size:1.2vh; font-weight:700; color:#fff; flex-shrink:0; }
 
 /* Final */
