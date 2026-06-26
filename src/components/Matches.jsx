@@ -675,7 +675,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
     }
 
     load()
-    const iv = setInterval(load, 10_000)
+    const iv = setInterval(load, 30_000)
     return () => clearInterval(iv)
   }, [])
 

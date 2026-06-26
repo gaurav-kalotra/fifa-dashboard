@@ -145,7 +145,7 @@ export default function App() {
           {tab === 'fixtures' && <Schedule groups={groups} matches={matches} />}
         </div>
 
-        <Ticker matches={matches} groups={groups} />
+        <Ticker matches={matches} groups={groups} isTV={isTV} />
       </div>
     )
   }

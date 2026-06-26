@@ -99,7 +99,7 @@ function awardItem(rank, player, ctx, type) {
   }
 }
 
-export default function Ticker({ matches, groups }) {
+export default function Ticker({ matches, groups, isTV }) {
   const [espnScorers, setEspnScorers] = useState([])
 
   useEffect(() => {
@@ -192,8 +192,9 @@ export default function Ticker({ matches, groups }) {
 
   if (!items.length) return null
 
-  const duration = Math.max(360, items.length * 22)
-  const doubled = [...items, ...items]
+  const displayItems = isTV ? items.slice(0, 12) : items
+  const duration = Math.max(360, displayItems.length * 22)
+  const doubled = [...displayItems, ...displayItems]
 
   return (
     <div className="ticker">
@@ -209,7 +210,7 @@ export default function Ticker({ matches, groups }) {
         >
           {doubled.map((item, i) => (
             <span key={i} className={`ticker-item ${item.type}`}>
-              {item.photo
+              {(!isTV && item.photo)
                 ? <img src={item.photo} alt="" className="ticker-player-photo" onError={e => { e.target.style.display = 'none' }} />
                 : item.icon === '🏆'
                   ? <img src="/assets/wc-trophy2.png" alt="" className="ticker-trophy-icon" />
