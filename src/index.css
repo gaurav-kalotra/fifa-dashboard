@@ -953,8 +953,8 @@ body.tv-mode { overflow: hidden; }
   box-shadow:0 0 40px rgba(251,191,36,.14), 0 0 80px rgba(251,191,36,.05), inset 0 1px 0 rgba(251,191,36,.15);
 }
 .mx-block-hdr {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:.55vh 1.2vw; background:rgba(255,255,255,.05);
+  display:flex; align-items:center; justify-content:center;
+  padding:.55vh 1.2vw; background:rgba(255,255,255,.05); gap:.8vw;
   border-bottom:1px solid rgba(255,255,255,.08);
 }
 .mx-rnd-name {
