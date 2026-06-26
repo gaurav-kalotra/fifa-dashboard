@@ -649,7 +649,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             roundName={name}
             ms={ms}
             highlight={idx === activeIdx}
-            showDetails={idx === activeIdx || (!hasLive && idx === activeIdx - 1)}
+            showDetails={idx === activeIdx || idx === activeIdx - 1}
             espnMap={espnMap}
             statusMap={idx <= activeIdx ? statusMap : undefined}
             timelines={timelines}

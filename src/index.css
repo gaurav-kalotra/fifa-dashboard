@@ -970,12 +970,12 @@ body.tv-mode { overflow: hidden; }
 .mx-block.current .mx-rnd-name { color:#fbbf24; font-size:1.65vh; }
 .mx-rnd-progress { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(255,255,255,.35); }
 .mx-rnd-date {
-  text-align:center; padding:.12vh .8vw .22vh;
-  font-family:'Inter',system-ui,sans-serif; font-size:.85vh;
-  color:rgba(255,255,255,.3); letter-spacing:.04em;
-  border-bottom:1px solid rgba(255,255,255,.06);
+  text-align:center; padding:.18vh .8vw .28vh;
+  font-family:'Inter',system-ui,sans-serif; font-size:1.05vh; font-weight:500;
+  color:rgba(255,255,255,.55); letter-spacing:.05em;
+  border-bottom:1px solid rgba(255,255,255,.07);
 }
-.mx-block.current .mx-rnd-date { color:rgba(251,191,36,.45); }
+.mx-block.current .mx-rnd-date { color:rgba(251,191,36,.8); font-size:1.15vh; }
 .mx-block-matches { flex:1; overflow:hidden; }
 
 /* Individual match row */
