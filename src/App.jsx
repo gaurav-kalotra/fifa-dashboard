@@ -92,11 +92,12 @@ export default function App() {
     }
   }, [])
 
+  const [hasLive, setHasLive] = useState(false)
   const groups = useMemo(() => computeGroups(matches), [matches])
 
   if (isTV) {
     return (
-      <div className="tv-frame">
+      <div className={`tv-frame${hasLive ? '' : ' no-live-idle'}`}>
         <Stars />
         <div className="tv-orb tv-orb-1" />
         <div className="tv-orb tv-orb-2" />
@@ -126,7 +127,7 @@ export default function App() {
         <div className="tv-progress" key={tab} />
 
         <div className="tv-content" key={`c-${tab}`}>
-          {tab === 'matches' && <Matches matches={matches} groups={groups} />}
+          {tab === 'matches' && <Matches matches={matches} groups={groups} onLiveChange={setHasLive} />}
           {tab === 'schedule' && <Schedule groups={groups} matches={matches} />}
         </div>
 

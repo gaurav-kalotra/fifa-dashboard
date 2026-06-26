@@ -793,6 +793,15 @@ body.tv-mode { overflow: hidden; }
 }
 .ticker-sep { color:rgba(255,255,255,0.18); font-size:.8vh; padding:0 0.4vw; }
 
+/* Idle mode (no live games): bigger, more prominent ticker */
+.no-live-idle .ticker { height:52px; }
+.no-live-idle .ticker-badge { font-size:1.5vh; }
+.no-live-idle .ticker-icon  { font-size:1.9vh; }
+.no-live-idle .ticker-item  { font-size:1.65vh; gap:10px; padding:0 2.8vw; }
+.no-live-idle .ticker-item-icon { font-size:1.75vh; }
+.no-live-idle .ticker-ctx   { font-size:1.3vh; }
+.no-live-idle .ticker-player-photo { width:3.0vh; height:3.0vh; }
+
 /* Glass card base */
 .tv-frame .games-group-card,.tv-frame .group-card,.tv-frame .bk-match {
   background:rgba(255,255,255,.055);
@@ -963,6 +972,13 @@ body.tv-mode { overflow: hidden; }
 }
 .mx-block.current .mx-rnd-name { color:#fbbf24; font-size:1.65vh; }
 .mx-rnd-progress { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(255,255,255,.35); }
+.mx-rnd-date {
+  text-align:center; padding:.12vh .8vw .22vh;
+  font-family:'Inter',system-ui,sans-serif; font-size:.85vh;
+  color:rgba(255,255,255,.3); letter-spacing:.04em;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.mx-block.current .mx-rnd-date { color:rgba(251,191,36,.45); }
 .mx-block-matches { flex:1; overflow:hidden; }
 
 /* Individual match row */

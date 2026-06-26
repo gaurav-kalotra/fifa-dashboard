@@ -257,15 +257,40 @@ function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
   )
 }
 
+function ordinal(n) {
+  if ([11,12,13].includes(n % 100)) return `${n}th`
+  if (n % 10 === 1) return `${n}st`
+  if (n % 10 === 2) return `${n}nd`
+  if (n % 10 === 3) return `${n}rd`
+  return `${n}th`
+}
+
 // ── Matchday block ────────────────────────────────────────────
 function RoundBlock({ roundName, ms, highlight, showDetails, espnMap, statusMap, timelines }) {
   const played = ms.filter(m => m.score?.ft).length
+
+  // Get the date of the first match with an ESPN date (in Pacific Time)
+  let roundDateStr = null
+  for (const m of ms) {
+    const espn = espnMap?.[teamsKey(m.team1, m.team2)]
+    if (espn?.date) {
+      try {
+        const d = new Date(espn.date)
+        const month = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'America/Los_Angeles' }).format(d)
+        const day   = parseInt(new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone: 'America/Los_Angeles' }).format(d))
+        roundDateStr = `${month} ${ordinal(day)}`
+      } catch {}
+      break
+    }
+  }
+
   return (
     <div className={`mx-block${highlight ? ' current' : ''}`}>
       <div className="mx-block-hdr">
         <span className="mx-rnd-name">{roundName}</span>
         <span className="mx-rnd-progress">{played}/{ms.length}</span>
       </div>
+      {roundDateStr && <div className="mx-rnd-date">{roundDateStr}</div>}
       <div className="mx-block-matches">
         {ms.map((m, i) => (
           <MatchRow
@@ -442,7 +467,7 @@ function roundNum(r) {
   return m ? +m[0] : 999
 }
 
-export default function Matches({ matches, groups }) {
+export default function Matches({ matches, groups, onLiveChange }) {
   const [espnMap, setEspnMap]             = useState({})
   const [liveEvents, setLiveEvents]       = useState([])
   const [timelines, setTimelines]         = useState({})
@@ -568,10 +593,31 @@ export default function Matches({ matches, groups }) {
       byRound[m.round].push(m)
     }
     const rounds = Object.entries(byRound).sort((a, b) => roundNum(a[0]) - roundNum(b[0]))
+
+    // Today's date in Pacific Time (stays the same until midnight PT)
+    const todayPT = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date())
+    // 'en-CA' gives YYYY-MM-DD which matches ESPN ISO date prefixes
+
+    const ptDay = (isoDate) => {
+      try {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date(isoDate))
+      } catch { return '' }
+    }
+
+    // Prefer the round whose ESPN match dates fall on today (PT) — even if all done
+    const todayIdx = rounds.findIndex(([, ms]) =>
+      ms.some(m => {
+        const espn = espnMap[teamsKey(m.team1, m.team2)]
+        return espn?.date && ptDay(espn.date) === todayPT
+      })
+    )
+    if (todayIdx >= 0) return { rounds, activeIdx: todayIdx }
+
+    // No today-matches found — first round with unplayed matches
     let activeIdx = rounds.findIndex(([, ms]) => ms.some(m => !m.score?.ft))
     if (activeIdx < 0) activeIdx = rounds.length - 1
     return { rounds, activeIdx }
-  }, [augMatches])
+  }, [augMatches, espnMap])
 
   const visible = useMemo(() => {
     const out = []
@@ -585,6 +631,7 @@ export default function Matches({ matches, groups }) {
 
   const hasLive = liveEvents.length > 0
   const liveCount = liveEvents.length
+  useEffect(() => { onLiveChange?.(hasLive) }, [hasLive, onLiveChange])
   const safeIdx = Math.min(currentLiveIdx, Math.max(liveCount - 1, 0))
   const currentLiveEvent = liveEvents[safeIdx]
 
