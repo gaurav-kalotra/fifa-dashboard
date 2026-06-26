@@ -53,9 +53,13 @@ function parseFifaTimeline(data) {
   for (const ev of evts) {
     const kind = classifyFifaEvt(ev.Type)
     if (!kind) continue
-    const hoa  = ev.HomeOrAway ?? ev.Team
-    const side = (hoa === 1 || hoa === 'Home') ? 'home' : (hoa === 2 || hoa === 'Away') ? 'away' : ''
-    out.push({ min: String(ev.MatchMinute ?? ''), type: kind, player: ev.PlayerName?.[0]?.Description || '', side })
+    const hoa  = ev.HomeOrAway ?? ev.Team ?? ev.TeamSide ?? ''
+    const hoaS = String(hoa).toLowerCase()
+    const side = (hoa===1||hoaS==='home'||hoaS==='h') ? 'home'
+               : (hoa===2||hoaS==='away'||hoaS==='a') ? 'away' : ''
+    const player = ev.PlayerName?.[0]?.Description || ev.Player?.Name?.[0]?.Description
+      || ev.NationalTeamPlayer?.PlayerName?.[0]?.Description || ''
+    out.push({ min: String(ev.MatchMinute ?? ev.Minute ?? ''), type: kind, player, side })
   }
   return out.sort((a, b) => (parseInt(a.min)||0) - (parseInt(b.min)||0))
 }
@@ -287,8 +291,10 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
   const timeline = showDetails && (played||isLive) ? (timelines?.[mk]||[]) : []
   const homeEvts = timeline.filter(e=>e.side==='home')
   const awayEvts = timeline.filter(e=>e.side==='away')
-  // For completed events without side info (ESPN fallback), split by position in list
-  const allEvts  = timeline.filter(e=>!e.side)
+  // Events without side info (ESPN fallback) — split half/half
+  const noSideEvts = timeline.filter(e=>!e.side)
+  const homeDisplay = homeEvts.length>0 ? homeEvts : noSideEvts.slice(0, Math.ceil(noSideEvts.length/2))
+  const awayDisplay = awayEvts.length>0 ? awayEvts : noSideEvts.slice(Math.ceil(noSideEvts.length/2))
 
   // Prediction (future card, upcoming)
   const pred = (!played && !isLive && dayOffset===1 && rankings)
@@ -301,9 +307,9 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
       <div className="mx-team-cell left">
         {url1 && <img src={url1} alt={ab(m.team1)} className="mx-flag" onError={e=>{e.target.style.display='none'}} />}
         <span className={`mx-name${win1?' win':''} st-${statusMap?.[m.team1]||'tbd'}`}>{ab(m.team1)}</span>
-        {(homeEvts.length>0||allEvts.length>0) && (
+        {homeDisplay.length>0 && (
           <div className="mx-row-events home">
-            {(homeEvts.length>0 ? homeEvts : allEvts.slice(0,Math.ceil(allEvts.length/2))).map((e,i)=>(
+            {homeDisplay.map((e,i)=>(
               <span key={i} className="mx-row-evt">
                 {e.player&&<>{e.player} </>}<EventIcon type={e.type}/>{e.min&&<> {e.min}'</>}
               </span>
@@ -312,8 +318,8 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
         )}
       </div>
 
-      {/* Center column */}
-      <div className="mx-center">
+      {/* Center column — wider when showing prediction bar */}
+      <div className={`mx-center${pred?' has-pred':''}`}>
         {/* Live: slider + pip */}
         {isLive && <div className="mx-live-slider" />}
         {isLive && <span className="mx-live-pip" />}
@@ -322,15 +328,15 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
         {/* FT label — current day completed only */}
         {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
 
+        {/* Prediction bar ABOVE VS — future card upcoming only */}
+        {pred && <PredictionBar {...pred} />}
+
         {/* Score / VS */}
         {played
           ? <span className="mx-score">{ds1}–{ds2}</span>
           : isLive && fifaInfo?.liveScore
             ? <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
             : <span className="mx-vs">vs</span>}
-
-        {/* Prediction bar — future card upcoming only */}
-        {pred && <PredictionBar {...pred} />}
 
         {/* Time + venue — all cards, all match states */}
         {!isLive && (localTime||venue) && (
@@ -343,9 +349,9 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
 
       {/* Away team cell */}
       <div className="mx-team-cell right">
-        {awayEvts.length>0 && (
+        {awayDisplay.length>0 && (
           <div className="mx-row-events away">
-            {awayEvts.map((e,i)=>(
+            {awayDisplay.map((e,i)=>(
               <span key={i} className="mx-row-evt">
                 {e.min&&<>{e.min}' </>}<EventIcon type={e.type}/>{e.player&&<> {e.player}</>}
               </span>

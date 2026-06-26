@@ -1039,16 +1039,19 @@ body.tv-mode { overflow: hidden; }
 }
 
 /* Prediction bars (future card upcoming matches) */
-.mx-pred { display:flex; flex-direction:column; gap:2px; width:100%; margin:2px 0; }
-.mx-pred-bar { display:flex; width:100%; height:3px; border-radius:2px; overflow:hidden; gap:1px; }
-.mx-pred-seg.home { background:rgba(96,165,250,.7); }
-.mx-pred-seg.draw { background:rgba(255,255,255,.22); }
-.mx-pred-seg.away { background:rgba(251,191,36,.7); }
+.mx-pred { display:flex; flex-direction:column; gap:3px; width:100%; margin-bottom:3px; }
+.mx-pred-bar { display:flex; width:100%; height:6px; border-radius:3px; overflow:hidden; gap:1px; }
+.mx-pred-seg.home { background:rgba(96,165,250,.75); }
+.mx-pred-seg.draw { background:rgba(255,255,255,.25); }
+.mx-pred-seg.away { background:rgba(251,191,36,.75); }
 .mx-pred-labels { display:flex; justify-content:space-between; }
-.mx-pred-pct { font-family:'Space Mono',monospace; font-size:.65vh; letter-spacing:.02em; }
-.mx-pred-pct.home { color:rgba(96,165,250,.6); }
-.mx-pred-pct.draw { color:rgba(255,255,255,.3); }
-.mx-pred-pct.away { color:rgba(251,191,36,.6); }
+.mx-pred-pct { font-family:'Space Mono',monospace; font-size:.7vh; letter-spacing:.02em; }
+.mx-pred-pct.home { color:rgba(96,165,250,.7); }
+.mx-pred-pct.draw { color:rgba(255,255,255,.35); }
+.mx-pred-pct.away { color:rgba(251,191,36,.7); }
+/* Widen center column when prediction bar is shown */
+.mx-center.has-pred { width:160px; }
+.mx-block.current .mx-center.has-pred { width:180px; }
 /* Sliding bar above the match clock in live rows */
 .mx-live-slider {
   width:44px; height:2px; border-radius:2px; overflow:hidden;
