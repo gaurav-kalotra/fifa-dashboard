@@ -846,7 +846,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
 
   return (
     <div className="mx-outer">
-      <div className={`mx-schedule-row${hasLive?'':' no-live'}`}>
+      <div className={`mx-schedule-row${hasLive?' live-active':' no-live'}`}>
         {hasLive ? (
           <>
             <LiveSidePanel

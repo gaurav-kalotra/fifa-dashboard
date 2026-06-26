@@ -1032,6 +1032,21 @@ body.tv-mode {
 .mx-schedule-row.no-live .mx-flag { width:28px; height:18px; }
 .mx-schedule-row.no-live .mx-block.current .mx-flag { width:34px; height:22px; }
 
+/* Live-active mode: centre card takes ~55% width, rows fill height */
+.mx-schedule-row.live-active { align-items:stretch; }
+.mx-schedule-row.live-active .mx-live-panel-slot { flex:.72; }
+.mx-schedule-row.live-active .mx-block           { flex:1.56; }
+.mx-schedule-row.live-active .mx-block-matches   { display:flex; flex-direction:column; }
+.mx-schedule-row.live-active .mx-row             { flex:1; padding:0 1.4vw; border-bottom-color:rgba(255,255,255,.04); }
+.mx-schedule-row.live-active .mx-name            { font-size:2.3vh; }
+.mx-schedule-row.live-active .mx-score           { font-size:3.2vh; }
+.mx-schedule-row.live-active .mx-vs              { font-size:2.0vh; }
+.mx-schedule-row.live-active .mx-flag            { width:32px; height:20px; }
+.mx-schedule-row.live-active .mx-center          { width:96px; }
+.mx-schedule-row.live-active .mx-row-evt         { font-size:1.15vh; }
+.mx-schedule-row.live-active .mx-rnd-name        { color:#fbbf24; font-size:1.7vh; }
+.mx-schedule-row.live-active .mx-ft-badge        { font-size:1.1vh; }
+
 .mx-team-cell { display:flex; align-items:center; gap:.4vw; min-width:0; flex:1; }
 .mx-team-cell.left { flex-direction:row; justify-content:flex-start; }
 .mx-team-cell.right { flex-direction:row; justify-content:flex-end; }
