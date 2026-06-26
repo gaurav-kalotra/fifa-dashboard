@@ -401,7 +401,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
           const { stadium, cityLine } = splitVenue(venue)
           return (
             <div className="mx-match-detail">
-              {localTime && <span className="mx-match-time">{localTime}</span>}
+              {localTime && !played && <span className="mx-match-time">{localTime}</span>}
               {stadium && <span className="mx-match-venue">{stadium}</span>}
               {cityLine && <span className="mx-match-venue-city">{cityLine}</span>}
             </div>
