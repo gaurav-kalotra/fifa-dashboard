@@ -307,8 +307,12 @@ function RoundBlock({ roundName, ms, highlight, showDetails, espnMap, statusMap,
 }
 
 // ── Pitch player marker ───────────────────────────────────────
-const ROW_Y      = [13, 37, 62, 85] // FWD→MID→DEF→GK top-to-bottom (away: FWD near center)
-const ROW_Y_FLIP = [87, 63, 38, 15] // GK→DEF→MID→FWD top-to-bottom (home: FWD near center)
+// Horizontal layout: players arranged in columns by position across the pitch width
+// posRow: 0=FWD 1=MID 2=DEF 3=GK
+// Home: GK far-left → FWD far-right (near center divider)
+const COL_X_HOME = [80, 55, 32, 10]
+// Away: FWD far-left (near center divider) → GK far-right
+const COL_X_AWAY = [20, 45, 68, 90]
 
 function PitchPlayer({ player, x, y }) {
   const [photoState, setPhotoState] = useState('headshot')
@@ -350,19 +354,20 @@ function PitchPlayer({ player, x, y }) {
   )
 }
 
-// Half-pitch: one team's formation within a half-width container
-// flip=true mirrors vertically so home FWDs point toward the center divider
-function HalfPitch({ players, flip = false }) {
-  const rowY = flip ? ROW_Y_FLIP : ROW_Y
-  const rows = [[],[],[],[]]
-  for (const p of players) rows[Math.min(posRow(p.pos), 3)].push(p)
+// Half-pitch: horizontal column layout — GK at far end, FWD near center divider
+function HalfPitch({ players, side = 'home' }) {
+  const colX = side === 'home' ? COL_X_HOME : COL_X_AWAY
+  // Group by posRow (0=FWD,1=MID,2=DEF,3=GK)
+  const cols = [[],[],[],[]]
+  for (const p of players) cols[Math.min(posRow(p.pos), 3)].push(p)
   return (
-    <div className="mx-half-pitch">
-      {rows.map((row, ri) =>
-        row.map((p, i) => {
-          const n = row.length
-          const x = n <= 1 ? 50 : 10 + (i / (n - 1)) * 80
-          return <PitchPlayer key={p.id || `${ri}-${i}`} player={p} x={x} y={rowY[ri]} />
+    <div className={`mx-half-pitch ${side}`}>
+      {cols.map((col, ci) =>
+        col.map((p, i) => {
+          const n = col.length
+          const x = colX[ci]
+          const y = n <= 1 ? 50 : 15 + (i / (n - 1)) * 70
+          return <PitchPlayer key={p.id || `${ci}-${i}`} player={p} x={x} y={y} />
         })
       )}
     </div>
@@ -417,7 +422,7 @@ function LiveMatchTile({ event, timeline, lineup }) {
             {lineup?.homeFormation && <span className="mx-side-fmtn">{lineup.homeFormation}</span>}
           </div>
           {homePlayers.length > 0
-            ? <HalfPitch players={homePlayers} flip />
+            ? <HalfPitch players={homePlayers} />
             : <div className="mx-no-lineup">
                 {homeEvts.length > 0
                   ? homeEvts.map((e, i) => (
@@ -442,7 +447,7 @@ function LiveMatchTile({ event, timeline, lineup }) {
             <img src={flagUrl(awayName)} alt="" className="mx-side-flag" onError={e=>{e.target.style.display='none'}} />
           </div>
           {awayPlayers.length > 0
-            ? <HalfPitch players={awayPlayers} />
+            ? <HalfPitch players={awayPlayers} side="away" />
             : <div className="mx-no-lineup">
                 {awayEvts.length > 0
                   ? awayEvts.map((e, i) => (
@@ -644,7 +649,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             roundName={name}
             ms={ms}
             highlight={idx === activeIdx}
-            showDetails={idx === activeIdx}
+            showDetails={idx === activeIdx || (!hasLive && idx === activeIdx - 1)}
             espnMap={espnMap}
             statusMap={idx <= activeIdx ? statusMap : undefined}
             timelines={timelines}

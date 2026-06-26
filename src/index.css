@@ -747,7 +747,7 @@ body.tv-mode { overflow: hidden; }
 
 /* Ticker */
 .ticker {
-  flex-shrink:0; height:40px;
+  flex-shrink:0; height:46px;
   display:flex; align-items:center;
   background:rgba(0,0,0,0.65);
   border-top:1px solid rgba(255,255,255,0.08);
@@ -774,7 +774,7 @@ body.tv-mode { overflow: hidden; }
 }
 .ticker-item {
   display:inline-flex; align-items:center; gap:8px;
-  font-family:'Space Mono',monospace; font-size:1.3vh;
+  font-family:'Space Mono',monospace; font-size:1.45vh;
   color:rgba(255,255,255,0.75); padding:0 2.2vw;
 }
 .ticker-item.upcoming { color:rgba(255,255,255,0.45); }
@@ -784,7 +784,7 @@ body.tv-mode { overflow: hidden; }
 .ticker-item.record   { color:#fbbf24; text-shadow:0 0 16px rgba(251,191,36,0.5); }
 .ticker-item-icon { font-size:1.45vh; line-height:1; flex-shrink:0; }
 .ticker-player-photo {
-  width:2.4vh; height:2.4vh; border-radius:50%; object-fit:cover; object-position:top;
+  width:3.2vh; height:3.2vh; border-radius:50%; object-fit:cover; object-position:top;
   border:1px solid rgba(255,255,255,.25); flex-shrink:0; background:rgba(255,255,255,.1);
 }
 .ticker-ctx {
@@ -793,14 +793,11 @@ body.tv-mode { overflow: hidden; }
 }
 .ticker-sep { color:rgba(255,255,255,0.18); font-size:.8vh; padding:0 0.4vw; }
 
-/* Idle mode (no live games): bigger, more prominent ticker */
-.no-live-idle .ticker { height:52px; }
-.no-live-idle .ticker-badge { font-size:1.5vh; }
-.no-live-idle .ticker-icon  { font-size:1.9vh; }
-.no-live-idle .ticker-item  { font-size:1.65vh; gap:10px; padding:0 2.8vw; }
-.no-live-idle .ticker-item-icon { font-size:1.75vh; }
-.no-live-idle .ticker-ctx   { font-size:1.3vh; }
-.no-live-idle .ticker-player-photo { width:3.0vh; height:3.0vh; }
+/* Idle mode (no live games): bigger match event text in cards */
+.mx-schedule-row.no-live .mx-row-evt  { font-size:1.0vh; }
+.mx-schedule-row.no-live .mx-block.current .mx-row-evt { font-size:1.2vh; }
+.mx-schedule-row.no-live .mx-ft-badge { font-size:1.0vh; }
+.mx-schedule-row.no-live .mx-block.current .mx-ft-badge { font-size:1.15vh; }
 
 /* Glass card base */
 .tv-frame .games-group-card,.tv-frame .group-card,.tv-frame .bk-match {
@@ -947,7 +944,7 @@ body.tv-mode { overflow: hidden; }
 
 /* Block = one matchday's card */
 .mx-block {
-  flex:0.75; min-width:0;
+  flex:1; min-width:0;
   background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.1);
   border-top:2px solid rgba(255,255,255,.2); border-radius:8px;
   overflow:hidden; backdrop-filter:blur(16px);
@@ -957,7 +954,7 @@ body.tv-mode { overflow: hidden; }
 }
 /* Current matchday block */
 .mx-block.current {
-  flex:1.5; opacity:1;
+  flex:1; opacity:1;
   border-top-color:#fbbf24;
   box-shadow:0 0 40px rgba(251,191,36,.14), 0 0 80px rgba(251,191,36,.05), inset 0 1px 0 rgba(251,191,36,.15);
 }
@@ -1161,21 +1158,37 @@ body.tv-mode { overflow: hidden; }
   color:rgba(247,245,240,.45); text-align:center; padding:.3vh .6vw; flex-shrink:0;
 }
 .mx-live-divider {
-  width:1px; background:rgba(255,255,255,.1); flex-shrink:0;
+  width:2px; background:rgba(255,255,255,.18); flex-shrink:0;
+  position:relative;
+}
+.mx-live-divider::before {
+  content:''; position:absolute;
+  left:50%; top:50%; transform:translate(-50%,-50%);
+  width:26px; height:26px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.2);
 }
 
 /* Half-pitch: fills remaining side height with green field */
+/* Horizontal pitch — GK far end, FWD near center divider */
 .mx-half-pitch {
-  position:relative; flex:1; min-height:0;
-  background:linear-gradient(180deg,#1b5c1b 0%,#206e20 40%,#1e6a1e 70%,#1b5c1b 100%);
-  overflow:hidden;
+  position:relative; flex:1; min-height:0; overflow:hidden;
 }
-/* Goal box marker at bottom of each half */
-.mx-half-pitch::after {
-  content:''; position:absolute;
-  bottom:3%; left:28%; right:28%; height:12%;
-  border:1px solid rgba(255,255,255,.16); border-bottom:none;
-  pointer-events:none;
+.mx-half-pitch.home {
+  background:linear-gradient(90deg, #163d16 0%, #1c5a1c 30%, #216820 100%);
+}
+.mx-half-pitch.away {
+  background:linear-gradient(90deg, #216820 0%, #1c5a1c 70%, #163d16 100%);
+}
+/* Goal box on the far end of each half */
+.mx-half-pitch.home::after {
+  content:''; position:absolute; pointer-events:none;
+  left:0; top:27%; bottom:27%; width:7%;
+  border:1px solid rgba(255,255,255,.18); border-left:none;
+}
+.mx-half-pitch.away::after {
+  content:''; position:absolute; pointer-events:none;
+  right:0; top:27%; bottom:27%; width:7%;
+  border:1px solid rgba(255,255,255,.18); border-right:none;
 }
 
 /* Player marker */
