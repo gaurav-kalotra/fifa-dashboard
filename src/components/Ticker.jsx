@@ -171,7 +171,7 @@ export default function Ticker({ matches, groups }) {
   return (
     <div className="ticker">
       <div className="ticker-badge">
-        <span className="ticker-icon">⚽</span>
+        <img src="/assets/wc-trophy.png" alt="" className="ticker-trophy-icon" />
         <span>WC2026</span>
       </div>
       <div className="ticker-track">
@@ -184,7 +184,9 @@ export default function Ticker({ matches, groups }) {
             <span key={i} className={`ticker-item ${item.type}`}>
               {item.photo
                 ? <img src={item.photo} alt="" className="ticker-player-photo" onError={e=>{e.target.style.display='none'}} />
-                : <span className="ticker-item-icon">{item.icon}</span>}
+                : item.icon === '🏆'
+                  ? <img src="/assets/wc-trophy.png" alt="" className="ticker-trophy-icon" />
+                  : <span className="ticker-item-icon">{item.icon}</span>}
               {item.teams?.map(t => {
                 const f = flagUrl(t)
                 return f ? <img key={t} src={f} alt={t} className="ticker-flag" /> : null

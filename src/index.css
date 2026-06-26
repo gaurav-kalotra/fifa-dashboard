@@ -606,7 +606,7 @@ body.tv-mode * { cursor: none; }
   --border: rgba(255,255,255,0.13);
   --text:   rgba(255,255,255,0.92);
   width: 100vw; height: 100vh;
-  background: url('https://images.mlssoccer.com/image/private/t_editorial_landscape_12_desktop/f_auto/mls-skc-prd/jqslzfkzp0jjtvbfx3uw.jpg') center/cover no-repeat fixed;
+  background: url('/assets/bg-stadium.jpg') center/cover no-repeat fixed;
   display: flex; flex-direction: column;
   padding: 1.4vh 3.5vw 3.5vh;
   position: relative; overflow: hidden;
@@ -773,6 +773,7 @@ body.tv-mode * { cursor: none; }
   flex-shrink:0; white-space:nowrap;
 }
 .ticker-icon { font-size:1.6vh; }
+.ticker-trophy-icon { height:2.2vh; width:auto; object-fit:contain; flex-shrink:0; filter:drop-shadow(0 0 6px rgba(251,191,36,.5)); }
 .ticker-track { flex:1; overflow:hidden; }
 .ticker-scroll {
   display:inline-flex; align-items:center; white-space:nowrap;

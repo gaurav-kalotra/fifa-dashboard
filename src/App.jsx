@@ -40,9 +40,7 @@ function Stars() {
   )
 }
 
-// Official WC2026 logo (trophy + mosaic 26 pattern) — confirmed 342KB PNG
-// Official WC2026 transparent PNG logo (user-provided, confirmed 286KB)
-const WC_LOGO_PNG = 'https://city-png.b-cdn.net/preview/preview_public/uploads/preview/hd-official-fifa-world-cup-26-trophy-transparent-background-701751712076887htawzli3zs.png'
+const WC_LOGO_PNG = '/assets/wc-logo.png'
 
 export default function App() {
   const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
