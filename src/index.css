@@ -985,15 +985,16 @@ body.tv-mode { overflow: hidden; }
 }
 .mx-rnd-name {
   font-family:'Oswald',system-ui,sans-serif; font-size:1.4vh; font-weight:700;
-  color:rgba(255,255,255,.6); letter-spacing:.08em;
+  color:rgba(255,255,255,.85); letter-spacing:.08em; text-shadow:0 0 8px rgba(255,255,255,.2);
 }
 .mx-block.current .mx-rnd-name { color:#fbbf24; font-size:1.65vh; }
 .mx-rnd-progress { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(255,255,255,.35); }
 .mx-rnd-date {
   text-align:center; padding:.18vh .8vw .28vh;
   font-family:'Space Mono',monospace; font-size:.9vh; font-weight:400;
-  color:rgba(255,255,255,.4); letter-spacing:.06em; text-transform:uppercase;
-  border-bottom:1px solid rgba(255,255,255,.07);
+  color:rgba(255,255,255,.7); letter-spacing:.06em; text-transform:uppercase;
+  text-shadow:0 0 8px rgba(255,255,255,.15);
+  border-bottom:1px solid rgba(255,255,255,.08);
 }
 .mx-block.current .mx-rnd-date { color:rgba(251,191,36,.75); }
 .mx-block-matches { flex:1; overflow:hidden; }
@@ -1035,7 +1036,7 @@ body.tv-mode { overflow: hidden; }
 .mx-row-events { display:flex; flex-direction:column; justify-content:center; gap:1px; min-width:0; }
 .mx-row-events.home { align-items:flex-end; margin-left:auto; margin-right:.7vw; }
 .mx-row-events.away { align-items:flex-start; margin-right:auto; margin-left:.7vw; }
-.mx-row-evt { font-size:0.82vh; color:rgba(255,255,255,.5); white-space:nowrap; line-height:1.4; }
+.mx-row-evt { font-size:0.82vh; color:rgba(255,255,255,.78); white-space:nowrap; line-height:1.4; text-shadow:0 0 6px rgba(255,255,255,.2); }
 
 .mx-flag { width:24px; height:16px; object-fit:cover; border-radius:2px; border:1px solid rgba(255,255,255,.12); flex-shrink:0; }
 .mx-block.current .mx-flag { width:28px; height:18px; }
@@ -1052,7 +1053,7 @@ body.tv-mode { overflow: hidden; }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
 .mx-ft-badge {
   font-family:'Space Mono',monospace; font-size:.75vh; letter-spacing:.12em;
-  color:rgba(255,255,255,.3);
+  color:rgba(255,255,255,.65); text-shadow:0 0 6px rgba(255,255,255,.2);
 }
 .mx-ft-badge.above {
   font-size:.9vh; color:rgba(60,172,59,.85); letter-spacing:.18em; margin-bottom:2px;
@@ -1067,7 +1068,7 @@ body.tv-mode { overflow: hidden; }
 .mx-pred-labels { display:flex; justify-content:space-between; }
 .mx-pred-pct { font-family:'Space Mono',monospace; font-size:.7vh; letter-spacing:.02em; }
 .mx-pred-pct.home { color:rgba(96,165,250,.7); }
-.mx-pred-pct.draw { color:rgba(255,255,255,.35); }
+.mx-pred-pct.draw { color:rgba(255,255,255,.65); }
 .mx-pred-pct.away { color:rgba(251,191,36,.7); }
 /* Widen center column when prediction bar is shown */
 .mx-center.has-pred { width:160px; }
@@ -1087,9 +1088,9 @@ body.tv-mode { overflow: hidden; }
   from { left:-20px; }
   to   { left:44px; }
 }
-.mx-live-match-clock { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(251,191,36,.7); text-align:center; letter-spacing:.03em; }
+.mx-live-match-clock { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(251,191,36,.9); text-align:center; letter-spacing:.03em; text-shadow:0 0 8px rgba(251,191,36,.4); }
 .mx-block.current .mx-score { font-size:2.6vh; }
-.mx-vs { font-size:1.4vh; color:rgba(255,255,255,.25); }
+.mx-vs { font-size:1.4vh; color:rgba(255,255,255,.55); text-shadow:0 0 8px rgba(255,255,255,.2); }
 .mx-block.current .mx-vs { font-size:1.7vh; }
 .mx-live-pip { width:7px; height:7px; border-radius:50%; background:#E61D25; flex-shrink:0; animation:live-blink 1.4s ease-in-out infinite; }
 
@@ -1100,15 +1101,18 @@ body.tv-mode { overflow: hidden; }
 }
 .mx-match-time {
   font-family:'Space Mono',monospace; font-size:1.05vh;
-  color:rgba(68,114,212,.8); line-height:1;
+  color:rgba(68,114,212,1); line-height:1;
+  text-shadow:0 0 10px rgba(68,114,212,.6);
 }
 .mx-match-venue {
   font-family:'Inter',system-ui,sans-serif; font-size:0.85vh;
-  color:rgba(247,245,240,.3); text-align:center; line-height:1.25;
+  color:rgba(255,255,255,.72); text-align:center; line-height:1.25;
+  text-shadow:0 0 8px rgba(255,255,255,.18);
 }
 .mx-match-venue-city {
   font-family:'Space Mono',monospace; font-size:0.78vh;
-  color:rgba(247,245,240,.22); text-align:center; line-height:1.2;
+  color:rgba(255,255,255,.55); text-align:center; line-height:1.2;
+  text-shadow:0 0 6px rgba(255,255,255,.15);
 }
 
 /* ── Live section ───────────────────────────────────── */
