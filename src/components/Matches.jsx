@@ -387,20 +387,23 @@ function VCoach({ name, y }) {
 }
 
 // ── Roster (separate from pitch) ──────────────────────────────
+const jerseyName = n => (n || '').trim().split(/\s+/).slice(-1)[0] || n || ''
+
 function RosterRow({ player }) {
   const [photoErr, setPhotoErr] = useState(false)
   const rc = player.rating
     ? +player.rating >= 8 ? 'great' : +player.rating >= 7 ? 'good' : +player.rating >= 6 ? 'ok' : 'bad'
     : null
+  const displayName = jerseyName(player.name) || `#${player.jersey}`
   return (
     <div className={`mx-rr${player.subbedOff ? ' off' : ''}`}>
       <span className="mx-rr-jn">{player.jersey}</span>
       <div className="mx-rr-av">
         {player.photo && !photoErr
           ? <img src={player.photo} alt="" className="mx-rr-img" onError={() => setPhotoErr(true)} />
-          : <span className="mx-rr-init">{(player.name || '?')[0]?.toUpperCase()}</span>}
+          : <span className="mx-rr-init">{displayName[0]?.toUpperCase()}</span>}
       </div>
-      <span className="mx-rr-nm">{player.name || `#${player.jersey}`}</span>
+      <span className="mx-rr-nm">{displayName}</span>
       <div className="mx-rr-evts">
         {Array.from({ length: player.goals || 0 }).map((_, i) => (
           <span key={i} className="mx-rr-ball">⚽</span>
@@ -431,6 +434,7 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers }) {
 
   const homeEvts = timeline.filter(e=>e.side==='home')
   const awayEvts = timeline.filter(e=>e.side==='away')
+  const subEvts  = timeline.filter(e=>e.type==='sub')
   const homePlayers = mergeWithSofa(annotatePlayerEvents(lineup?.home||[], homeEvts), sofaPlayers?.home)
   const awayPlayers = mergeWithSofa(annotatePlayerEvents(lineup?.away||[], awayEvts), sofaPlayers?.away)
 
@@ -491,6 +495,18 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers }) {
         home={homePlayers} away={awayPlayers}
         homeAbbr={homeAbbr} awayAbbr={awayAbbr}
       />
+      {subEvts.length > 0 && (
+        <div className="mx-lsp-subs">
+          {subEvts.map((e,i) => (
+            <span key={i} className="mx-lsp-sub">
+              {e.min && <span className="mx-lsp-sub-min">{e.min}'</span>}
+              <span className="mx-sub-off">{jerseyName(e.player)}<span>↓</span></span>
+              <span className="mx-sub-sep">→</span>
+              <span className="mx-sub-in">{jerseyName(e.playerOn||e.player)}<span>↑</span></span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
