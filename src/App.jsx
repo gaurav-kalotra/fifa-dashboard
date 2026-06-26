@@ -42,6 +42,8 @@ function Stars() {
 
 // Official WC2026 emblem — Wikimedia Commons CDN (confirmed working)
 const WC_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/120px-2026_FIFA_World_Cup_emblem.svg.png'
+// Real FIFA World Cup trophy photo (Wikimedia Commons, confirmed 200px)
+const WC_TROPHY = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/FIFA_World_Cup_Trophy_%28Ank_Kumar%2C_Infosys_Limited%29_01.jpg/250px-FIFA_World_Cup_Trophy_%28Ank_Kumar%2C_Infosys_Limited%29_01.jpg'
 
 export default function App() {
   const [tab, setTab] = useState(isTV ? TV_TABS[0] : 'games')
@@ -112,10 +114,10 @@ export default function App() {
         <div className="tv-header">
           <div className="tv-header-center">
             <div className="tv-title-block">
-              <img src={WC_LOGO} alt="WC2026" className="tv-trophy-img" />
+              <img src={WC_TROPHY} alt="WC Trophy" className="tv-trophy-img" />
               <div>
                 <div className="tv-title">FIFA World Cup 2026</div>
-                <div className="tv-subtitle"><span>USA</span><span className="tv-sub-dot">·</span><span>CAN</span><span className="tv-sub-dot">·</span><span>MEX</span></div>
+                <div className="tv-subtitle"><span>UNITED STATES</span><span className="tv-sub-dot">·</span><span>CANADA</span><span className="tv-sub-dot">·</span><span>MEXICO</span></div>
               </div>
             </div>
             <div className="tv-tabs-indicator">

@@ -13,12 +13,29 @@ const CITY_STATE = {
   'Mexico City':'CDMX','Guadalajara':'JAL','Monterrey':'NL',
 }
 
+// state/province code → host country name (for flag lookup)
+const STATE_COUNTRY = {
+  TX:'USA',CA:'USA',NJ:'USA',WA:'USA',FL:'USA',GA:'USA',MA:'USA',MO:'USA',PA:'USA',AZ:'USA',
+  ON:'Canada',BC:'Canada',
+  CDMX:'Mexico',JAL:'Mexico',NL:'Mexico',
+}
+
 function appendState(venue) {
   if (!venue) return venue
   const city = Object.keys(CITY_STATE).find(c => venue.includes(c))
   if (!city) return venue
   const st = CITY_STATE[city]
   return venue.includes(st) ? venue : `${venue}, ${st}`
+}
+
+function splitVenue(venue) {
+  if (!venue) return { stadium: '', cityLine: '', country: null }
+  const ci = venue.indexOf(',')
+  const stadium = ci > 0 ? venue.slice(0, ci).trim() : venue
+  const rest    = ci > 0 ? venue.slice(ci + 1).trim() : ''
+  const stCode  = rest.split(',').pop().trim()
+  const country = STATE_COUNTRY[stCode] || null
+  return { stadium, cityLine: rest, country }
 }
 
 // ── FIFA (primary) ────────────────────────────────────────────
@@ -366,12 +383,22 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             : <span className="mx-vs">vs</span>}
 
         {/* Time + venue — all cards, all match states */}
-        {!isLive && (localTime||venue) && (
-          <div className="mx-match-detail">
-            {localTime && <span className="mx-match-time">{localTime}</span>}
-            {venue && <span className="mx-match-venue">{venue}</span>}
-          </div>
-        )}
+        {!isLive && (localTime||venue) && (() => {
+          const { stadium, cityLine, country } = splitVenue(venue)
+          const vFlag = country ? flagUrl(country) : null
+          return (
+            <div className="mx-match-detail">
+              {localTime && <span className="mx-match-time">{localTime}</span>}
+              {stadium && <span className="mx-match-venue">{stadium}</span>}
+              {(cityLine||vFlag) && (
+                <span className="mx-match-venue-city">
+                  {cityLine}
+                  {vFlag && <img src={vFlag} alt={country} className="mx-venue-flag" />}
+                </span>
+              )}
+            </div>
+          )
+        })()}
       </div>
 
       {/* Away team cell */}
