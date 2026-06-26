@@ -398,7 +398,6 @@ function RoundBlock({ roundName, ms, highlight, dayOffset, showDetails, fifaMap,
     <div className={`mx-block${highlight?' current':''}`}>
       <div className="mx-block-hdr">
         <span className="mx-rnd-name">{roundName}</span>
-        <span className="mx-rnd-progress">{played}/{ms.length}</span>
       </div>
       {roundDateStr && <div className="mx-rnd-date">{roundDateStr}</div>}
       <div className="mx-block-matches">
@@ -518,7 +517,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             idStage:   m.IdStage,
             idMatch:   m.IdMatch,
             date:      m.Date || existing.date,
-            venue:     m.Stadium?.Name?.[0]?.Description || existing.venue || '',
+            venue:     [m.Stadium?.Name?.[0]?.Description, m.Stadium?.CityName?.[0]?.Description].filter(Boolean).join(', ') || existing.venue || '',
             state,
             clock:     m.MatchTime || existing.clock || '',
             liveScore: state==='in'   ? sc : null,
