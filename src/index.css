@@ -1042,8 +1042,10 @@ body.tv-mode { overflow: hidden; }
 .mx-name.st-elim, .mx-block.current .mx-name.st-elim  { color:rgba(255,60,60,.8); }
 .mx-name.win { color:#4ade80; text-shadow:0 0 10px rgba(74,222,128,.45); }
 
-.mx-center { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; width:70px; flex-shrink:0; }
+.mx-center { display:grid; grid-template-rows:1fr auto 1fr; align-items:center; justify-items:center; align-self:stretch; width:70px; flex-shrink:0; }
 .mx-block.current .mx-center { width:90px; }
+.mx-cen-top { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; width:100%; padding-bottom:2px; align-self:end; }
+.mx-cen-bot { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; width:100%; align-self:start; }
 .mx-score { font-family:'Space Mono',monospace; font-size:2.2vh; font-weight:700; color:#fff; text-align:center; text-shadow:0 0 20px rgba(125,211,252,0.7), 0 0 40px rgba(125,211,252,0.25); }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
 .mx-ft-badge {
@@ -1354,8 +1356,10 @@ body.tv-mode { overflow: hidden; }
 .sch-row-qual td { color:rgba(247,245,240,.95); }
 .sch-row-qual .sch-td-team { border-left:2px solid rgba(74,222,128,.75); padding-left:calc(.4vw - 2px); }
 .sch-row-tbd .sch-td-team { border-left:2px solid rgba(251,191,36,.75); padding-left:calc(.4vw - 2px); }
-.sch-row-elim td { color:rgba(247,245,240,.42); }
-.sch-row-elim .sch-td-team { border-left:2px solid rgba(255,60,60,.85); padding-left:calc(.4vw - 2px); }
+.sch-row-elim td { color:rgba(247,245,240,.28); }
+.sch-row-elim .sch-td-team { border-left:2px solid rgba(220,38,38,.9); padding-left:calc(.4vw - 2px); background:rgba(180,30,30,.07); }
+.sch-row-elim .sch-flag-xs { filter:grayscale(1) opacity(.4); }
+.sch-row-elim .sch-td-team span { text-decoration:line-through; text-decoration-color:rgba(220,38,38,.5); }
 .sch-tbl td.pos { color:#3dffa0; }
 .sch-tbl td.neg { color:rgba(255,100,100,.8); }
 

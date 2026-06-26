@@ -376,40 +376,38 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
         )}
       </div>
 
-      {/* Center column — wider when showing prediction bar */}
+      {/* Center column — 3-row grid keeps score/vs pinned to true center */}
       <div className={`mx-center${pred?' has-pred':''}`}>
-        {/* Live: slider + pip */}
-        {isLive && <div className="mx-live-slider" />}
-        {isLive && <span className="mx-live-pip" />}
-        {isLive && fifaInfo?.clock && <span className="mx-live-match-clock">{fifaInfo.clock}</span>}
+        {/* Top row: everything above score/vs */}
+        <div className="mx-cen-top">
+          {isLive && <div className="mx-live-slider" />}
+          {isLive && <span className="mx-live-pip" />}
+          {isLive && fifaInfo?.clock && <span className="mx-live-match-clock">{fifaInfo.clock}</span>}
+          {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
+          {!isLive && !played && m.group && dayOffset === 0 && <span className="mx-match-group">{m.group}</span>}
+          {!isLive && !played && localTime && <span className="mx-match-time">{localTime}</span>}
+          {pred && <PredictionBar {...pred} />}
+        </div>
 
-        {/* FT label — current day completed only */}
-        {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
-
-        {/* Group label + time above VS — today's upcoming only */}
-        {!isLive && !played && m.group && dayOffset === 0 && <span className="mx-match-group">{m.group}</span>}
-        {!isLive && !played && localTime && <span className="mx-match-time">{localTime}</span>}
-
-        {/* Prediction bar ABOVE VS — future card upcoming only */}
-        {pred && <PredictionBar {...pred} />}
-
-        {/* Score / VS */}
+        {/* Middle row: score/vs — pinned to true vertical center */}
         {played
           ? <span className="mx-score">{ds1}–{ds2}</span>
           : isLive && fifaInfo?.liveScore
             ? <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
             : <span className="mx-vs">vs</span>}
 
-        {/* Venue below score/vs */}
-        {!isLive && venue && (() => {
-          const { stadium, cityLine } = splitVenue(venue)
-          return (
-            <div className="mx-match-detail">
-              {stadium && <span className="mx-match-venue">{stadium}</span>}
-              {cityLine && <span className="mx-match-venue-city">{cityLine}</span>}
-            </div>
-          )
-        })()}
+        {/* Bottom row: venue */}
+        <div className="mx-cen-bot">
+          {!isLive && venue && (() => {
+            const { stadium, cityLine } = splitVenue(venue)
+            return (
+              <div className="mx-match-detail">
+                {stadium && <span className="mx-match-venue">{stadium}</span>}
+                {cityLine && <span className="mx-match-venue-city">{cityLine}</span>}
+              </div>
+            )
+          })()}
+        </div>
       </div>
 
       {/* Away team cell */}
