@@ -493,9 +493,19 @@ export default function Matches({ matches, groups, onLiveChange }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const r = await fetch(ESPN_SCOREBOARD)
-        const d = await r.json()
-        const events = d.events || []
+        // Fetch today + yesterday (for prev card events/dates) + tomorrow (for next card dates)
+        const ptDate = (offset = 0) => {
+          const d = new Date(Date.now() + offset * 86400000)
+          return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' })
+            .format(d).replace(/-/g, '')
+        }
+        const [rY, rT, rTm] = await Promise.all([
+          fetch(`${ESPN_SCOREBOARD}?dates=${ptDate(-1)}`),
+          fetch(`${ESPN_SCOREBOARD}?dates=${ptDate(0)}`),
+          fetch(`${ESPN_SCOREBOARD}?dates=${ptDate(1)}`),
+        ])
+        const [dY, dT, dTm] = await Promise.all([rY.json(), rT.json(), rTm.json()])
+        const events = [...(dY.events || []), ...(dT.events || []), ...(dTm.events || [])]
 
         const map = {}
         for (const ev of events) {

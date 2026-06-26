@@ -971,11 +971,11 @@ body.tv-mode { overflow: hidden; }
 .mx-rnd-progress { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(255,255,255,.35); }
 .mx-rnd-date {
   text-align:center; padding:.18vh .8vw .28vh;
-  font-family:'Inter',system-ui,sans-serif; font-size:1.05vh; font-weight:500;
-  color:rgba(255,255,255,.55); letter-spacing:.05em;
+  font-family:'Oswald',system-ui,sans-serif; font-size:1.1vh; font-weight:400;
+  color:rgba(255,255,255,.5); letter-spacing:.12em; text-transform:uppercase;
   border-bottom:1px solid rgba(255,255,255,.07);
 }
-.mx-block.current .mx-rnd-date { color:rgba(251,191,36,.8); font-size:1.15vh; }
+.mx-block.current .mx-rnd-date { color:rgba(251,191,36,.85); font-size:1.2vh; }
 .mx-block-matches { flex:1; overflow:hidden; }
 
 /* Individual match row */
