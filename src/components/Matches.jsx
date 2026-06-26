@@ -7,7 +7,6 @@ const ESPN_SUMMARY    = id => `https://site.api.espn.com/apis/site/v2/sports/soc
 const FIFA_SEASON     = '285023'
 const FIFA_LIVE_LIST  = `https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=${FIFA_SEASON}&language=en&matchStatus=3&count=20`
 const FIFA_LIVE       = (stageId, matchId) => `https://api.fifa.com/api/v3/live/football/17/${FIFA_SEASON}/${stageId}/${matchId}?language=en`
-// FIFA pos integer → pitch row (0=FWD 1=MID 2=DEF 3=GK)
 const FIFA_POS_ABBR   = { 0:'GK', 1:'D', 2:'M', 3:'F' }
 
 function normalTeam(n = '') {
@@ -21,19 +20,18 @@ function teamsKey(t1, t2) {
   return a.join('|')
 }
 
-function eventIcon(type = '') {
-  const t = type.toLowerCase()
-  if (t.includes('owngoal') || t.includes('own')) return '🥅'
-  if (t.includes('goal') || t === 'goal') return '⚽'
-  if (t.includes('yellow') && t.includes('red')) return '🟧'
-  if (t.includes('yellow')) return '🟨'
-  if (t.includes('red')) return '🟥'
-  if (t.includes('pen')) return '⚽ pen'
-  return '•'
+// CSS-styled card component for match event display
+function EventIcon({ type }) {
+  const t = (type || '').toLowerCase()
+  if (t.includes('owngoal') || t.includes('own')) return <><span className="mx-evt-icon">⚽</span><sup className="mx-og-sup">og</sup></>
+  if (t.includes('goal') || t === 'goal' || t === 'pen') return <span className="mx-evt-icon">⚽</span>
+  if (t.includes('yellow') && t.includes('red')) return <span className="mx-evt-card" style={{background:'linear-gradient(135deg,#fbbf24 50%,#ef4444 50%)'}} />
+  if (t.includes('yellow')) return <span className="mx-evt-card yellow" />
+  if (t.includes('red')) return <span className="mx-evt-card red" />
+  return <span>•</span>
 }
 
 function parseTimeline(summary, homeTeamId, awayTeamId) {
-  // ESPN uses different field names across endpoints — try all of them
   const seen = new Set()
   const items = [
     ...(summary?.plays || []),
@@ -46,13 +44,11 @@ function parseTimeline(summary, homeTeamId, awayTeamId) {
   for (const p of items) {
     const typeId   = String(p.type?.id   || '').toLowerCase()
     const typeText = String(p.type?.text || p.type?.name || '').toLowerCase()
-    // ESPN soccer type IDs: 70=goal, 72=penalty goal, 93=yellow, 94=red, 95=double-yellow
     const isGoal = typeText.includes('goal') || typeId === '70' || typeId === '72' || typeText === 'score'
     const isCard = typeText.includes('yellow') || typeText.includes('red') || ['93','94','95'].includes(typeId)
     const isPen  = typeText.includes('pen') || typeId === '72'
     if (!isGoal && !isCard && !isPen) continue
 
-    // Prefer displayValue ("23:00") over raw seconds value
     const dispVal = p.clock?.displayValue
     const secVal  = p.clock?.value
     let min = ''
@@ -62,7 +58,6 @@ function parseTimeline(summary, homeTeamId, awayTeamId) {
       min = String(Math.floor(secVal / 60))
     }
 
-    // Try multiple participant paths, then fall back to parsing p.text
     const scorer = p.participants?.find(x =>
       (x.type?.id === 'scorer' || x.type?.id === '1' ||
        (x.type?.text || '').toLowerCase().includes('scorer'))
@@ -74,7 +69,6 @@ function parseTimeline(summary, homeTeamId, awayTeamId) {
       || (p.text || '').match(/[-–]\s*([^(,\n]+?)(?:\s*[\(,]|$)/)?.[1]?.trim()
       || ''
 
-    // Match team by ID (most reliable) then fall back to abbreviation
     const teamId = String(p.team?.id || '')
     const side = homeTeamId && teamId === String(homeTeamId) ? 'home'
                : awayTeamId && teamId === String(awayTeamId) ? 'away'
@@ -90,8 +84,7 @@ function parseTimeline(summary, homeTeamId, awayTeamId) {
   return out.sort((a, b) => (parseInt(a.min) || 0) - (parseInt(b.min) || 0))
 }
 
-// Position row: 0=FWD 1=MID 2=DEF 3=GK (top→bottom on pitch)
-// ESPN uses compound abbreviations like CD-L, CF-R, CM-L — split on '-' first
+// Position row: 0=FWD 1=MID 2=DEF 3=GK
 const POS_ROW_BASE = {
   G:3, GK:3,
   CD:2, CB:2, LB:2, RB:2, LWB:2, RWB:2, SW:2, D:2, WB:2,
@@ -130,13 +123,10 @@ function parseFifaLineup(data) {
 
 function parseLineup(summary, eventId) {
   const result = { home:[], away:[], homeCoach:'', awayCoach:'', homeFormation:'', awayFormation:'' }
-
-  // ESPN WC2026: lineup data is in summary.rosters[], not header.competitions[0].lineups
   for (const roster of summary?.rosters || []) {
     const side = roster.homeAway
     if (side === 'home') result.homeFormation = roster.formation || ''
     else result.awayFormation = roster.formation || ''
-
     const players = (roster.roster || [])
       .filter(p => p.starter)
       .map(p => {
@@ -157,11 +147,9 @@ function parseLineup(summary, eventId) {
         }
       })
       .sort((a, b) => a.formationPlace - b.formationPlace)
-
     if (side === 'home') result.home = players
     else result.away = players
   }
-
   return result
 }
 
@@ -174,15 +162,37 @@ function fmtLocalTime(isoDate) {
   } catch { return null }
 }
 
+// Normalize name for fuzzy matching: strip accents, lowercase, letters only
+function normName(n = '') {
+  return n.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z]/g, '')
+}
+
+// Annotate players with goal/card counts from timeline events (name-match)
+function annotatePlayerEvents(players, events) {
+  return players.map(p => {
+    const pWords = (p.name || '').split(/\s+/).map(normName).filter(w => w.length > 2)
+    const mine = events.filter(e => {
+      const eWords = (e.player || '').split(/\s+/).map(normName).filter(w => w.length > 2)
+      return eWords.some(ew => pWords.includes(ew))
+    })
+    return {
+      ...p,
+      goals:   mine.filter(e => e.type === 'goal').length,
+      yellows: mine.filter(e => e.type === 'yellow').length,
+      reds:    mine.filter(e => e.type === 'red').length,
+    }
+  })
+}
+
 // ── Match row ─────────────────────────────────────────────────
 function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
   const ft = m.score?.ft
   const espnState = espnInfo?.state
-  // Scores: prefer openfootball (source of truth), fall back to ESPN post-score
   const displayScore = ft || (espnState === 'post' ? espnInfo?.postScore : null)
   const [ds1, ds2] = displayScore || []
   const played = !!displayScore
-  // Only live if ESPN says in-progress AND game isn't already complete
   const isLive = !played && espnState === 'in'
   const win1 = played && ds1 > ds2
   const win2 = played && ds2 > ds1
@@ -202,7 +212,9 @@ function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
         {homeEvents.length > 0 && (
           <div className="mx-row-events home">
             {homeEvents.map((e, i) => (
-              <span key={i} className="mx-row-evt">{e.player && <>{e.player} </>}{eventIcon(e.type)} {e.min}</span>
+              <span key={i} className="mx-row-evt">
+                {e.player && <>{e.player} </>}<EventIcon type={e.type} />{e.min && <> {e.min}</>}
+              </span>
             ))}
           </div>
         )}
@@ -228,7 +240,9 @@ function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
         {awayEvents.length > 0 && (
           <div className="mx-row-events away">
             {awayEvents.map((e, i) => (
-              <span key={i} className="mx-row-evt">{e.min} {eventIcon(e.type)}{e.player && <> {e.player}</>}</span>
+              <span key={i} className="mx-row-evt">
+                {e.min && <>{e.min} </>}<EventIcon type={e.type} />{e.player && <> {e.player}</>}
+              </span>
             ))}
           </div>
         )}
@@ -267,18 +281,19 @@ function RoundBlock({ roundName, ms, highlight, showDetails, espnMap, statusMap,
 const ROW_Y = [13, 37, 62, 85] // FWD, MID, DEF, GK (% from top)
 
 function PitchPlayer({ player, x, y }) {
-  const [photoState, setPhotoState] = useState('headshot') // headshot → jersey → none
-  const jerseyName = player.name ? player.name.split(' ').slice(-1)[0] : player.jersey
+  const [photoState, setPhotoState] = useState('headshot')
+  const jerseyName = player.name ? player.name.split(/\s+/).slice(-1)[0] : player.jersey
 
   const src = photoState === 'headshot' ? player.photo
              : photoState === 'jersey'  ? player.jerseyImg
              : null
-
   const onErr = () => setPhotoState(s => s === 'headshot' ? 'jersey' : 'none')
 
   const ratingClass = player.rating
     ? +player.rating >= 7.5 ? 'r-great' : +player.rating >= 6.5 ? 'r-ok' : 'r-bad'
     : null
+
+  const hasEvents = (player.goals > 0) || (player.yellows > 0) || (player.reds > 0)
 
   return (
     <div className="mx-pp" style={{ left:`${x}%`, top:`${y}%` }}>
@@ -286,6 +301,15 @@ function PitchPlayer({ player, x, y }) {
         {src
           ? <img src={src} alt="" onError={onErr} className="mx-pp-img" />
           : <span className="mx-pp-num-badge">{player.jersey}</span>}
+        {hasEvents && (
+          <div className="mx-pp-events">
+            {player.goals > 0 && Array.from({ length: player.goals }).map((_, i) => (
+              <span key={`g${i}`} className="mx-pp-evt-ball">⚽</span>
+            ))}
+            {player.yellows > 0 && <span className="mx-pp-evt-card yellow" />}
+            {player.reds > 0 && <span className="mx-pp-evt-card red" />}
+          </div>
+        )}
       </div>
       <div className="mx-pp-label">
         <span className="mx-pp-num">#{player.jersey}</span>
@@ -296,18 +320,16 @@ function PitchPlayer({ player, x, y }) {
   )
 }
 
-function PitchView({ players }) {
+// Half-pitch: one team's formation within a half-width container
+function HalfPitch({ players }) {
   const rows = [[],[],[],[]]
   for (const p of players) rows[Math.min(posRow(p.pos), 3)].push(p)
   return (
-    <div className="mx-pitch">
-      <div className="mx-pline-half" />
-      <div className="mx-pbox-top" />
-      <div className="mx-pbox-bot" />
+    <div className="mx-half-pitch">
       {rows.map((row, ri) =>
         row.map((p, i) => {
           const n = row.length
-          const x = n <= 1 ? 50 : 12 + (i / (n - 1)) * 76
+          const x = n <= 1 ? 50 : 10 + (i / (n - 1)) * 80
           return <PitchPlayer key={p.id || `${ri}-${i}`} player={p} x={x} y={ROW_Y[ri]} />
         })
       )}
@@ -317,13 +339,6 @@ function PitchView({ players }) {
 
 // ── Live match tile ───────────────────────────────────────────
 function LiveMatchTile({ event, timeline, lineup }) {
-  const [showAway, setShowAway] = useState(false)
-
-  useEffect(() => {
-    const t = setInterval(() => setShowAway(s => !s), 12_000)
-    return () => clearInterval(t)
-  }, [])
-
   const comp   = event.competitions?.[0]
   const home   = comp?.competitors?.find(c => c.homeAway === 'home')
   const away   = comp?.competitors?.find(c => c.homeAway === 'away')
@@ -338,11 +353,11 @@ function LiveMatchTile({ event, timeline, lineup }) {
   const homeName  = home?.team?.displayName || homeAbbr
   const awayName  = away?.team?.displayName || awayAbbr
 
-  const squadPlayers = showAway ? (lineup?.away || []) : (lineup?.home || [])
-  const squadCoach   = showAway ? (lineup?.awayCoach || '') : (lineup?.homeCoach || '')
-  const squadFmtn    = showAway ? (lineup?.awayFormation || '') : (lineup?.homeFormation || '')
-  const squadAbbr    = showAway ? awayAbbr : homeAbbr
-  const squadFlag    = flagUrl(showAway ? awayName : homeName)
+  const homeEvts = timeline.filter(e => e.side === 'home')
+  const awayEvts = timeline.filter(e => e.side === 'away')
+
+  const homePlayers = annotatePlayerEvents(lineup?.home || [], homeEvts)
+  const awayPlayers = annotatePlayerEvents(lineup?.away || [], awayEvts)
 
   return (
     <div className="mx-live-tile">
@@ -360,24 +375,36 @@ function LiveMatchTile({ event, timeline, lineup }) {
         </div>
       </div>
 
-      {/* Squad cycling header */}
-      <div className="mx-squad-hdr">
-        <div className="mx-squad-team-id">
-          {squadFlag && <img src={squadFlag} alt="" className="mx-sb-flag" onError={e=>{e.target.style.display='none'}} />}
-          <span className="mx-squad-abbr">{squadAbbr}</span>
-          {squadFmtn && <span className="mx-squad-fmtn">{squadFmtn}</span>}
+      {/* Side-by-side squad panels */}
+      <div className="mx-live-squads">
+        {/* Home side */}
+        <div className="mx-live-side">
+          <div className="mx-live-side-hdr">
+            <img src={flagUrl(homeName)} alt="" className="mx-side-flag" onError={e=>{e.target.style.display='none'}} />
+            <span className="mx-side-abbr">{homeAbbr}</span>
+            {lineup?.homeFormation && <span className="mx-side-fmtn">{lineup.homeFormation}</span>}
+          </div>
+          {homePlayers.length > 0
+            ? <HalfPitch players={homePlayers} />
+            : <div className="mx-no-lineup">Lineup pending</div>}
+          {lineup?.homeCoach && <div className="mx-side-coach">⚽ {lineup.homeCoach}</div>}
         </div>
-        <div className="mx-squad-dots">
-          <button className={`mx-squad-dot${!showAway ? ' on' : ''}`} onClick={()=>setShowAway(false)} />
-          <button className={`mx-squad-dot${showAway ? ' on' : ''}`} onClick={()=>setShowAway(true)} />
+
+        <div className="mx-live-divider" />
+
+        {/* Away side */}
+        <div className="mx-live-side">
+          <div className="mx-live-side-hdr right">
+            {lineup?.awayFormation && <span className="mx-side-fmtn">{lineup.awayFormation}</span>}
+            <span className="mx-side-abbr">{awayAbbr}</span>
+            <img src={flagUrl(awayName)} alt="" className="mx-side-flag" onError={e=>{e.target.style.display='none'}} />
+          </div>
+          {awayPlayers.length > 0
+            ? <HalfPitch players={awayPlayers} />
+            : <div className="mx-no-lineup">Lineup pending</div>}
+          {lineup?.awayCoach && <div className="mx-side-coach">⚽ {lineup.awayCoach}</div>}
         </div>
       </div>
-
-      {squadPlayers.length > 0
-        ? <PitchView players={squadPlayers} />
-        : <div className="mx-no-lineup">Lineup not yet available</div>}
-
-      {squadCoach && <div className="mx-live-coach">Coach: {squadCoach}</div>}
     </div>
   )
 }
@@ -389,11 +416,22 @@ function roundNum(r) {
 }
 
 export default function Matches({ matches, groups }) {
-  const [espnMap, setEspnMap]         = useState({})
-  const [liveEvents, setLiveEvents]   = useState([])
-  const [timelines, setTimelines]     = useState({}) // eventId → parsed events[]
-  const [lineups, setLineups]         = useState({}) // eventId → { home, away, coaches, formations }
-  const fetchedCompletedIds           = useRef(new Set())
+  const [espnMap, setEspnMap]             = useState({})
+  const [liveEvents, setLiveEvents]       = useState([])
+  const [timelines, setTimelines]         = useState({})
+  const [lineups, setLineups]             = useState({})
+  const [currentLiveIdx, setCurrentLiveIdx] = useState(0)
+  const fetchedCompletedIds               = useRef(new Set())
+
+  // Cycle between live games every 20 seconds
+  useEffect(() => {
+    if (liveEvents.length <= 1) return
+    const t = setInterval(() => setCurrentLiveIdx(i => (i + 1) % liveEvents.length), 20_000)
+    return () => clearInterval(t)
+  }, [liveEvents.length])
+
+  // Reset index when game count changes
+  useEffect(() => { setCurrentLiveIdx(0) }, [liveEvents.length])
 
   useEffect(() => {
     const load = async () => {
@@ -402,7 +440,6 @@ export default function Matches({ matches, groups }) {
         const d = await r.json()
         const events = d.events || []
 
-        // Build lookup map for all events
         const map = {}
         for (const ev of events) {
           const comp = ev.competitions?.[0]
@@ -423,14 +460,12 @@ export default function Matches({ matches, groups }) {
         }
         setEspnMap(map)
 
-        // Identify live matches
         const live = events.filter(e => e.status?.type?.state === 'in')
         setLiveEvents(live)
 
         const newTimelines = {}
         const newLineups   = {}
 
-        // Fetch ESPN timelines + roster fallback for live matches
         await Promise.all(live.map(async ev => {
           try {
             const comp = ev.competitions?.[0]
@@ -439,14 +474,13 @@ export default function Matches({ matches, groups }) {
             const r2 = await fetch(ESPN_SUMMARY(ev.id))
             const d2 = await r2.json()
             newTimelines[ev.id] = parseTimeline(d2, homeComp?.team?.id, awayComp?.team?.id)
-            newLineups[ev.id]   = parseLineup(d2, ev.id) // ESPN roster fallback
+            newLineups[ev.id]   = parseLineup(d2, ev.id)
           } catch { newTimelines[ev.id] = [] }
         }))
 
-        // Fetch FIFA live data — better photos, coach, formation
+        // Fetch FIFA live data for better photos, coach, formation
         try {
           const fifaList = await fetch(FIFA_LIVE_LIST).then(r => r.json())
-          // Build lookup: sorted abbr pair → ESPN event ID
           const abbrMap = {}
           for (const ev of live) {
             const comp = ev.competitions?.[0]
@@ -465,7 +499,6 @@ export default function Matches({ matches, groups }) {
           }))
         } catch {}
 
-        // Fetch timelines for newly completed matches (once only)
         const newlyCompleted = events.filter(
           e => e.status?.type?.state === 'post' && !fetchedCompletedIds.current.has(e.id)
         )
@@ -515,7 +548,8 @@ export default function Matches({ matches, groups }) {
 
   const hasLive = liveEvents.length > 0
   const liveCount = liveEvents.length
-  const cols = liveCount <= 2 ? liveCount : liveCount <= 4 ? 2 : 3
+  const safeIdx = Math.min(currentLiveIdx, Math.max(liveCount - 1, 0))
+  const currentLiveEvent = liveEvents[safeIdx]
 
   return (
     <div className="mx-outer">
@@ -539,15 +573,26 @@ export default function Matches({ matches, groups }) {
           <div className="mx-live-section-label">
             <span className="mx-live-dot" />
             LIVE NOW — {liveCount} match{liveCount > 1 ? 'es' : ''}
+            {liveCount > 1 && (
+              <span className="mx-live-game-dots">
+                {liveEvents.map((_, i) => (
+                  <button
+                    key={i}
+                    className={`mx-live-game-dot${i === safeIdx ? ' on' : ''}`}
+                    onClick={() => setCurrentLiveIdx(i)}
+                  />
+                ))}
+              </span>
+            )}
           </div>
-          <div
-            className="mx-live-tiles"
-            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
-          >
-            {liveEvents.map(ev => (
-              <LiveMatchTile key={ev.id} event={ev} timeline={timelines[ev.id] || []} lineup={lineups[ev.id]} />
-            ))}
-          </div>
+          {currentLiveEvent && (
+            <LiveMatchTile
+              key={currentLiveEvent.id}
+              event={currentLiveEvent}
+              timeline={timelines[currentLiveEvent.id] || []}
+              lineup={lineups[currentLiveEvent.id]}
+            />
+          )}
         </div>
       )}
     </div>
