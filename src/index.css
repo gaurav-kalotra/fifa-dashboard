@@ -990,6 +990,7 @@ body.tv-mode { overflow: hidden; }
 .mx-block.current .mx-center { min-width:85px; }
 .mx-score { font-family:'Space Mono',monospace; font-size:2.2vh; font-weight:700; color:#fff; text-align:center; text-shadow:0 0 20px rgba(34,211,238,0.65), 0 0 40px rgba(34,211,238,0.2); }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); animation:live-blink 1.4s ease-in-out infinite; }
+.mx-live-match-clock { font-family:'Space Mono',monospace; font-size:1.0vh; color:rgba(251,191,36,.7); text-align:center; letter-spacing:.03em; }
 .mx-block.current .mx-score { font-size:2.6vh; }
 .mx-vs { font-size:1.4vh; color:rgba(255,255,255,.25); }
 .mx-block.current .mx-vs { font-size:1.7vh; }
@@ -1076,6 +1077,19 @@ body.tv-mode { overflow: hidden; }
 .mx-live-center {
   display:flex; flex-direction:column; align-items:center; gap:.15vh;
 }
+.mx-live-progress {
+  width:52px; height:3px; background:rgba(255,255,255,.08);
+  border-radius:2px; overflow:hidden; display:flex; justify-content:flex-start;
+}
+.mx-live-progress.h2 { justify-content:flex-end; }
+.mx-live-progress-fill {
+  height:100%;
+  background:linear-gradient(90deg, rgba(34,211,238,.85), rgba(251,191,36,.85));
+  border-radius:2px; transition:width 1s ease;
+}
+.mx-live-progress.ht .mx-live-progress-fill {
+  width:100% !important; background:rgba(251,191,36,.9);
+}
 .mx-live-num {
   font-family:'Space Mono',monospace; font-size:3.2vh; font-weight:700;
   color:rgba(247,245,240,.6); line-height:1;
@@ -1151,8 +1165,8 @@ body.tv-mode { overflow: hidden; }
 .sch-row-qual td { color:rgba(247,245,240,.95); }
 .sch-row-qual .sch-td-team { border-left:2px solid rgba(74,222,128,.75); padding-left:calc(.4vw - 2px); }
 .sch-row-tbd .sch-td-team { border-left:2px solid rgba(251,191,36,.75); padding-left:calc(.4vw - 2px); }
-.sch-row-elim td { color:rgba(247,245,240,.38); }
-.sch-row-elim .sch-td-team { border-left:2px solid rgba(239,68,68,.6); padding-left:calc(.4vw - 2px); }
+.sch-row-elim td { color:rgba(247,245,240,.42); }
+.sch-row-elim .sch-td-team { border-left:2px solid rgba(255,60,60,.85); padding-left:calc(.4vw - 2px); }
 .sch-tbl td.pos { color:#3dffa0; }
 .sch-tbl td.neg { color:rgba(255,100,100,.8); }
 
