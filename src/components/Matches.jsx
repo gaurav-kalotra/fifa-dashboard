@@ -386,6 +386,9 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
         {/* FT label — current day completed only */}
         {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
 
+        {/* Time above VS — upcoming/future only */}
+        {!isLive && !played && localTime && <span className="mx-match-time">{localTime}</span>}
+
         {/* Prediction bar ABOVE VS — future card upcoming only */}
         {pred && <PredictionBar {...pred} />}
 
@@ -396,12 +399,11 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             ? <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
             : <span className="mx-vs">vs</span>}
 
-        {/* Time + venue — all cards, all match states */}
-        {!isLive && (localTime||venue) && (() => {
+        {/* Venue below score/vs */}
+        {!isLive && venue && (() => {
           const { stadium, cityLine } = splitVenue(venue)
           return (
             <div className="mx-match-detail">
-              {localTime && !played && <span className="mx-match-time">{localTime}</span>}
               {stadium && <span className="mx-match-venue">{stadium}</span>}
               {cityLine && <span className="mx-match-venue-city">{cityLine}</span>}
             </div>

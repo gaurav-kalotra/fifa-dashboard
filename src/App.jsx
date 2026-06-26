@@ -117,7 +117,7 @@ export default function App() {
               <img src={WC_LOGO_PNG} alt="" className="tv-trophy-img" aria-hidden="true" />
             </div>
             <div className="tv-subtitle">
-              <span>UNITED STATES</span><span className="tv-sub-dot">·</span><span>CANADA</span><span className="tv-sub-dot">·</span><span>MEXICO</span>
+              <span>CANADA</span><span className="tv-sub-dot">·</span><span>UNITED STATES</span><span className="tv-sub-dot">·</span><span>MEXICO</span>
             </div>
             <div className="tv-tabs-indicator">
               {TV_TABS.map(t => (

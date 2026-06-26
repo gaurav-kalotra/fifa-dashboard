@@ -55,7 +55,7 @@ export default function Ticker({ matches, groups }) {
                 name: ad.displayName || ad.fullName || '',
                 goals: l.value,
                 jersey: ad.jersey || '',
-                photo: `https://a.espncdn.com/i/headshots/soccer/players/full/${id}.png`,
+                photo: ad.headshot?.href || `https://a.espncdn.com/i/headshots/soccer/players/full/${id}.png`,
               }
             } catch { return null }
           })
