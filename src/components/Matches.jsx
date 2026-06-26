@@ -113,7 +113,7 @@ function MatchRow({ m, isLive, showDetails, espnInfo }) {
       <div className="mx-center">
         {isLive && <span className="mx-live-pip" />}
         {isLive && espnInfo?.clock && (
-          <span className="mx-live-match-clock">{espnInfo.clock}'</span>
+          <span className="mx-live-match-clock">{espnInfo.clock}</span>
         )}
         {played
           ? <span className="mx-score">{s1}–{s2}</span>
@@ -218,7 +218,7 @@ function LiveMatchTile({ event, timeline }) {
                   <div className={`mx-live-evt-side home${!isAway ? ' active' : ''}`}>
                     {!isAway && <><span className="mx-live-evt-icon">{icon}</span><span className="mx-live-evt-player">{evt.player || '—'}</span></>}
                   </div>
-                  <span className="mx-live-evt-min">{evt.min}'</span>
+                  <span className="mx-live-evt-min">{evt.min}</span>
                   <div className={`mx-live-evt-side away${isAway ? ' active' : ''}`}>
                     {isAway && <><span className="mx-live-evt-player">{evt.player || '—'}</span><span className="mx-live-evt-icon">{icon}</span></>}
                   </div>
@@ -328,10 +328,21 @@ export default function Matches({ matches }) {
   }, [rounds, activeIdx])
 
   const hasLive = liveEvents.length > 0
+  const liveCount = liveEvents.length
+  const cols = liveCount <= 2 ? liveCount : liveCount <= 4 ? 2 : 3
+  const rows = Math.ceil(liveCount / cols)
+  // Give schedule more room when only 1 row of live tiles; shrink for 2+ rows
+  const schedBasis = !hasLive ? undefined
+    : rows === 1 ? '56%'
+    : rows === 2 ? '42%'
+    : '34%'
 
   return (
     <div className="mx-outer">
-      <div className={`mx-schedule-row${hasLive ? ' has-live' : ''}`}>
+      <div
+        className="mx-schedule-row"
+        style={hasLive ? { flex: `0 0 ${schedBasis}` } : undefined}
+      >
         {visible.map(({ round: [name, ms], idx }) => (
           <RoundBlock
             key={name}
@@ -349,9 +360,12 @@ export default function Matches({ matches }) {
         <div className="mx-live-section">
           <div className="mx-live-section-label">
             <span className="mx-live-dot" />
-            LIVE NOW
+            LIVE NOW — {liveCount} match{liveCount > 1 ? 'es' : ''}
           </div>
-          <div className="mx-live-tiles">
+          <div
+            className="mx-live-tiles"
+            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+          >
             {liveEvents.map(ev => (
               <LiveMatchTile key={ev.id} event={ev} timeline={timelines[ev.id] || []} />
             ))}

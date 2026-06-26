@@ -935,7 +935,6 @@ body.tv-mode { overflow: hidden; }
   gap:1.4vh; overflow:hidden;
   flex:1; min-height:0;
 }
-.mx-schedule-row.has-live { flex:0 0 56%; }
 
 /* Block = one matchday's card */
 .mx-block {
@@ -1013,8 +1012,7 @@ body.tv-mode { overflow: hidden; }
 
 /* ── Live section ───────────────────────────────────── */
 .mx-live-section {
-  flex:0 0 auto; display:flex; flex-direction:column; gap:.6vh;
-  min-height:0;
+  flex:1; min-height:0; display:flex; flex-direction:column; gap:.6vh;
 }
 .mx-live-section-label {
   display:flex; align-items:center; gap:6px;
@@ -1023,12 +1021,12 @@ body.tv-mode { overflow: hidden; }
   flex-shrink:0;
 }
 .mx-live-tiles {
-  display:flex; flex-wrap:wrap; gap:1.4vh; overflow:hidden; flex:1;
+  display:grid; gap:1.4vh; overflow:hidden; flex:1; min-height:0;
 }
 
 /* Live match tile */
 .mx-live-tile {
-  flex:1; min-width:0;
+  min-width:0; min-height:0;
   background:rgba(3,18,10,.9); border:1px solid rgba(61,255,160,.18);
   border-top:2px solid rgba(61,255,160,.5); border-radius:8px;
   overflow:hidden; backdrop-filter:blur(12px);
