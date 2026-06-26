@@ -611,16 +611,22 @@ body.tv-mode { overflow: hidden; }
   position: relative; overflow: hidden;
 }
 
-/* Scanlines — very subtle over the photo */
+/* Dark overlay — heavy overall, radially lighter at center */
 .tv-frame::before {
-  content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
-  background:repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.012) 3px, rgba(0,0,0,0.012) 4px);
+  content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:radial-gradient(ellipse 60% 55% at 50% 50%,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.72) 50%,
+    rgba(0,0,0,0.88) 100%
+  );
 }
 
-/* Soft edge vignette — keeps edges readable without blacking out center */
+/* Edge blur — CSS mask-based blur ring around perimeter, clear centre */
 .tv-frame::after {
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:50;
-  background:radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:51;
+  backdrop-filter:blur(12px);
+  -webkit-mask-image:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, black 75%);
+  mask-image:radial-gradient(ellipse 65% 60% at 50% 50%, transparent 35%, black 75%);
 }
 
 /* Hide stars when we have a real background photo */
