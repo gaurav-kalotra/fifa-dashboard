@@ -4,6 +4,9 @@ import { ab, flagUrl } from '../utils'
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
 const ESPN_ATHLETE = id =>
   `https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/${id}?lang=en&region=us`
+const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY
+const APIFOOTBALL_PLAYER = name =>
+  `https://api-football-v1.p.rapidapi.com/v3/players?search=${encodeURIComponent(name)}&season=2024`
 const TSDB_SEARCH = q =>
   `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(q)}`
 
@@ -11,18 +14,28 @@ function stripDiacritics(str) {
   return str.normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
-async function tsdbLookup(query) {
-  const r = await fetch(TSDB_SEARCH(query))
-  const d = await r.json()
-  const p = d.player?.[0]
-  return p?.strCutout || p?.strThumb || null
-}
-
 async function fetchPlayerPhoto(rawName) {
+  const name = stripDiacritics(rawName)
+  // Try API-Football first (best coverage) if key present
+  if (RAPIDAPI_KEY) {
+    try {
+      const r = await fetch(APIFOOTBALL_PLAYER(name), {
+        headers: { 'X-RapidAPI-Key': RAPIDAPI_KEY, 'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' }
+      })
+      const d = await r.json()
+      const photo = d.response?.[0]?.player?.photo
+      if (photo) return photo
+    } catch {}
+  }
+  // Fallback: TheSportsDB (free, no key)
   try {
-    const name = stripDiacritics(rawName)
-    // Try full name first, then last name only
-    return (await tsdbLookup(name)) || (await tsdbLookup(name.split(' ').pop()))
+    const search = async q => {
+      const r = await fetch(TSDB_SEARCH(q))
+      const d = await r.json()
+      const p = d.player?.[0]
+      return p?.strCutout || p?.strThumb || null
+    }
+    return (await search(name)) || (await search(name.split(' ').pop()))
   } catch { return null }
 }
 
