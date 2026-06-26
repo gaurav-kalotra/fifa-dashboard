@@ -177,7 +177,7 @@ function MatchRow({ m, showDetails, espnInfo, statusMap, timelines }) {
   const url2 = flagUrl(m.team2)
   const localTime = espnInfo ? fmtLocalTime(espnInfo.date) : null
   const venue = espnInfo?.venue
-  const timeline = played && showDetails ? (timelines?.[espnInfo?.id] || []) : []
+  const timeline = showDetails && (played || isLive) ? (timelines?.[espnInfo?.id] || []) : []
   const homeEvents = timeline.filter(e => e.side === 'home')
   const awayEvents = timeline.filter(e => e.side === 'away')
 
@@ -335,17 +335,6 @@ function LiveMatchTile({ event, timeline, lineup }) {
           <img src={flagUrl(awayName)} alt={awayAbbr} className="mx-sb-flag" onError={e=>{e.target.style.display='none'}} />
         </div>
       </div>
-
-      {/* Match events strip */}
-      {timeline.length > 0 && (
-        <div className="mx-live-strip">
-          {timeline.map((e, i) => (
-            <span key={i} className="mx-live-strip-evt">
-              {e.side === 'home' ? homeAbbr : awayAbbr} {eventIcon(e.type)}{e.player ? ` ${e.player.split(' ').pop()}` : ''} {e.min}'
-            </span>
-          ))}
-        </div>
-      )}
 
       {/* Squad cycling header */}
       <div className="mx-squad-hdr">
