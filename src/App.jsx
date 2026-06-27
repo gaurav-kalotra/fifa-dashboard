@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { computeGroups } from './utils'
+import { computeGroups, flagUrl } from './utils'
 import SNAPSHOT from './data/snapshot'
 import Matches from './components/Matches'
 import Games from './components/Games'
@@ -7,7 +7,52 @@ import Standings from './components/Standings'
 import Bracket from './components/Bracket'
 import Schedule from './components/Schedule'
 import Ticker from './components/Ticker'
+import playerManifest from './playerManifest.json'
+import PLAYER_NUMBERS from './playerNumbers'
 import './index.css'
+
+const FACE_ENTRIES = Object.entries(playerManifest) // [name, path]
+const FACE_DURATION = Math.round(FACE_ENTRIES.length * 22)
+
+const FACE_TEAM_RANGES = [
+  [0,25,'Belgium'],[26,51,'France'],[52,75,'Croatia'],[76,104,'Brazil'],
+  [105,129,'Uruguay'],[130,159,'Spain'],[160,184,'England'],[185,208,'Japan'],
+  [209,232,'Senegal'],[233,254,'Bosnia & Herzegovina'],[255,279,'Serbia'],
+  [280,304,'Switzerland'],[305,329,'Mexico'],[330,354,'South Korea'],
+  [355,369,'Italy'],[370,379,'Australia'],[380,414,'Denmark'],
+  [415,439,'Iran'],[440,464,'Saudi Arabia'],[465,499,'Poland'],
+  [500,524,'Germany'],[525,559,'Wales'],[560,584,'Netherlands'],
+  [585,609,'Ghana'],[610,634,'Cameroon'],[635,649,'Qatar'],
+  [650,659,'Egypt'],[660,694,'Ecuador'],[695,714,'USA'],
+  [715,739,'Canada'],[740,764,'Argentina'],[765,789,'Portugal'],
+  [790,814,'Tunisia'],[815,849,'Honduras'],[850,882,'Morocco'],
+]
+const FACE_TEAM_MAP = {}
+for (const [start, end, team] of FACE_TEAM_RANGES)
+  for (let i = start; i <= end; i++)
+    if (FACE_ENTRIES[i]) FACE_TEAM_MAP[FACE_ENTRIES[i][0]] = team
+
+function FaceTicker() {
+  const doubled = [...FACE_ENTRIES, ...FACE_ENTRIES]
+  return (
+    <div className="face-ticker">
+      <div className="face-ticker-scroll" style={{ animationDuration: `${FACE_DURATION}s` }}>
+        {doubled.map(([name, src], i) => {
+          const flag = flagUrl(FACE_TEAM_MAP[name])
+          return (
+            <span key={i} className="face-ticker-item"
+              style={flag ? { '--ftflag': `url("${flag}")` } : {}}>
+              <img src={src} alt="" className="face-ticker-img"
+                onError={e => { e.currentTarget.style.display = 'none' }} />
+              <span className="face-ticker-name">{name}</span>
+              {PLAYER_NUMBERS[name] != null && <span className="face-ticker-num">#{PLAYER_NUMBERS[name]}</span>}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
 const TV_TABS = ['matches', 'fixtures']
@@ -83,6 +128,11 @@ export default function App() {
     fixtureDurRef.current = Math.max(30_000, pairs * 2 * 6000 + 6_000)
   }, [matches, isTV])
 
+  const switchTab = (next) => {
+    tabChangeRef.current = Date.now()
+    setTab(next)
+  }
+
   useEffect(() => {
     if (!isTV) return
     document.body.classList.add('tv-mode')
@@ -91,7 +141,10 @@ export default function App() {
     // Check every 500ms whether enough time has passed for current tab
     const tick = setInterval(() => {
       setTab(t => {
-        const dur = t === 'fixtures' ? fixtureDurRef.current : 30_000
+        const live = hasLiveRef.current
+        const dur = t === 'fixtures'
+          ? (live ? 10_000 : fixtureDurRef.current)   // brief glimpse when live, normal otherwise
+          : (live ? 50_000 : 30_000)                   // linger on matches when live
         if (Date.now() - tabChangeRef.current >= dur) {
           tabChangeRef.current = Date.now()
           return TV_TABS[(TV_TABS.indexOf(t) + 1) % TV_TABS.length]
@@ -107,6 +160,8 @@ export default function App() {
   }, [])
 
   const [hasLive, setHasLive] = useState(false)
+  const hasLiveRef = useRef(false)
+  useEffect(() => { hasLiveRef.current = hasLive }, [hasLive])
 
   if (isTV) {
     return (
@@ -118,6 +173,7 @@ export default function App() {
         <div className="tv-orb tv-orb-4" />
         <div className="tv-bloom" />
 
+        <FaceTicker />
         <div className="tv-header">
           <div className="tv-header-center">
             <div className="tv-title-row">
@@ -130,9 +186,10 @@ export default function App() {
             </div>
             <div className="tv-tabs-indicator">
               {TV_TABS.map(t => (
-                <span key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}>
+                <button key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}
+                  onClick={() => switchTab(t)}>
                   {t === 'matches' ? 'MATCHES' : 'FIXTURES'}
-                </span>
+                </button>
               ))}
             </div>
           </div>
@@ -140,9 +197,12 @@ export default function App() {
 
         <div className="tv-progress" key={tab} />
 
-        <div className="tv-content" key={`c-${tab}`}>
-          {tab === 'matches' && <Matches matches={matches} groups={groups} onLiveChange={setHasLive} />}
-          {tab === 'fixtures' && <Schedule groups={groups} matches={matches} />}
+        {/* Both components stay mounted so live-state (sidePanelMode etc.) survives tab switches */}
+        <div className="tv-content" style={{display: tab === 'matches' ? '' : 'none'}}>
+          <Matches matches={matches} groups={groups} onLiveChange={setHasLive} />
+        </div>
+        <div className="tv-content" style={{display: tab === 'fixtures' ? '' : 'none'}}>
+          <Schedule groups={groups} matches={matches} />
         </div>
 
         <Ticker matches={matches} groups={groups} isTV={isTV} />

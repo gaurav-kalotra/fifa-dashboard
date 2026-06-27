@@ -11,6 +11,13 @@ const ISO2 = {
   "Argentina":"ar","Algeria":"dz","Austria":"at","Jordan":"jo",
   "Portugal":"pt","DR Congo":"cd","Uzbekistan":"uz","Colombia":"co",
   "England":"gb-eng","Croatia":"hr","Ghana":"gh","Panama":"pa",
+  "Denmark":"dk","Poland":"pl","Serbia":"rs","Italy":"it",
+  "Wales":"gb-wls","Cameroon":"cm","Honduras":"hn","Costa Rica":"cr",
+  "Indonesia":"id","Venezuela":"ve","Chile":"cl","Bosnia-Herzegovina":"ba",
+  "United States":"us","Republic of Ireland":"ie","Ireland":"ie",
+  "Norway":"no","Scotland":"gb-sct","Romania":"ro","Slovakia":"sk",
+  "Hungary":"hu","Greece":"gr","Ukraine":"ua","Russia":"ru",
+  "Bolivia":"bo","Peru":"pe","Paraguay":"py",
 }
 
 const NAME_NORM = { "Türkiye": "Turkey", "Côte d'Ivoire": "Ivory Coast", "United States": "USA", "United States of America": "USA", "Korea Republic": "South Korea", "Republic of Korea": "South Korea" }

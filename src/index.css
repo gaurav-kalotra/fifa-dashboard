@@ -734,12 +734,66 @@ body.tv-mode {
   font-family:'Oswald',system-ui,sans-serif;
   font-size:clamp(8px,1.1vh,13px); letter-spacing:.12em;
   color:rgba(255,255,255,0.2); transition:color .5s, text-shadow .5s;
+  background:none; border:none; padding:0; cursor:pointer;
 }
 .tv-tab-pip.active {
   color:#fbbf24;
   text-shadow:0 0 18px rgba(251,191,36,0.7);
 }
 @keyframes live-blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(1.4)} }
+
+/* Face ticker strip — mirrors bottom .ticker band */
+.face-ticker {
+  flex-shrink:0; height:46px;
+  display:flex; align-items:center;
+  background:rgba(0,0,0,0.65);
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  overflow:hidden; position:relative; z-index:2;
+}
+.face-ticker-scroll {
+  display:inline-flex; align-items:center; gap:0;
+  animation:ticker-roll linear infinite; will-change:transform;
+  white-space:nowrap;
+}
+.face-ticker-item {
+  display:inline-flex; align-items:center; gap:8px; flex-shrink:0;
+  padding:0 2.2vw; position:relative; overflow:hidden; isolation:isolate;
+}
+.face-ticker-item::before {
+  content:''; position:absolute; inset:-4px;
+  background:var(--ftflag) center/cover no-repeat;
+  filter:blur(10px); opacity:0.28; pointer-events:none; z-index:-1;
+}
+.face-ticker-item::after {
+  content:''; position:absolute; inset:0;
+  background:var(--ftflag) center/cover no-repeat;
+  filter:blur(4px) brightness(1.7) saturate(2);
+  opacity:0.52; pointer-events:none; z-index:-1;
+  mask-image:linear-gradient(to bottom,
+    black 0%, transparent 30%, transparent 70%, black 100%);
+  -webkit-mask-image:linear-gradient(to bottom,
+    black 0%, transparent 30%, transparent 70%, black 100%);
+}
+.face-ticker-img {
+  width:3.2vh; height:3.2vh; border-radius:50%;
+  object-fit:cover; object-position:top center;
+  border:1px solid rgba(255,255,255,.25);
+  flex-shrink:0; background:rgba(255,255,255,.1);
+}
+.face-ticker-name {
+  font-family:'Space Mono',monospace; font-size:1.45vh; font-weight:400;
+  color:rgba(255,255,255,0.75); white-space:nowrap;
+}
+.face-ticker-num {
+  font-family:'Space Mono',monospace; font-size:1.1vh; font-weight:700;
+  color:rgba(251,191,36,.85); letter-spacing:.02em; white-space:nowrap;
+}
+.face-ticker-sep {
+  font-size:1.5vh; font-weight:700; flex-shrink:0;
+  color:rgba(251,191,36,.75);
+  text-shadow:0 0 8px rgba(251,191,36,.9), 0 0 18px rgba(251,191,36,.4);
+  padding-left:2.2vw;
+}
 
 /* Progress bar: cyan → gold */
 .tv-progress {
@@ -792,6 +846,22 @@ body.tv-mode {
   display:inline-flex; align-items:center; gap:8px;
   font-family:'Space Mono',monospace; font-size:1.45vh;
   color:rgba(255,255,255,0.75); padding:0 2.2vw;
+  position:relative; overflow:hidden; isolation:isolate;
+}
+.ticker-item::before {
+  content:''; position:absolute; inset:-4px;
+  background:var(--tkflag) center/cover no-repeat;
+  filter:blur(10px); opacity:0.28; pointer-events:none; z-index:-1;
+}
+.ticker-item::after {
+  content:''; position:absolute; inset:0;
+  background:var(--tkflag) center/cover no-repeat;
+  filter:blur(4px) brightness(1.7) saturate(2);
+  opacity:0.52; pointer-events:none; z-index:-1;
+  mask-image:linear-gradient(to bottom,
+    black 0%, transparent 30%, transparent 70%, black 100%);
+  -webkit-mask-image:linear-gradient(to bottom,
+    black 0%, transparent 30%, transparent 70%, black 100%);
 }
 .ticker-item.upcoming { color:rgba(255,255,255,0.45); }
 .ticker-item.stat     { color:#fff; }
@@ -812,6 +882,14 @@ body.tv-mode {
   color:rgba(251,191,36,0.6); letter-spacing:.07em;
 }
 .ticker-award-icon { font-size:1.6vh; filter:sepia(1) saturate(6) hue-rotate(8deg) brightness(1.15); }
+.ticker-jersey {
+  font-family:'Space Mono',monospace; font-size:1.05vh; font-weight:700;
+  color:rgba(251,191,36,.85); letter-spacing:.02em;
+}
+.ticker-rank {
+  font-family:'Oswald',system-ui,sans-serif; font-size:1.2vh; font-weight:700;
+  color:rgba(255,255,255,.65); letter-spacing:.02em; flex-shrink:0;
+}
 .ticker-sep { color:rgba(255,255,255,0.18); font-size:.8vh; padding:0 0.4vw; }
 
 /* Idle mode (no live games): bigger match event text in cards */
@@ -1423,6 +1501,10 @@ body.tv-mode {
   font-family:'Space Mono',monospace;
   font-size:clamp(7px,1.05vh,13px); font-weight:700; color:#fff; line-height:1;
 }
+.mx-vp-photo {
+  width:100%; height:100%; border-radius:50%;
+  object-fit:cover; object-position:top center;
+}
 .mx-vp-name {
   font-family:'Inter',system-ui,sans-serif;
   font-size:clamp(6px,.78vh,10px); font-weight:600; color:#fff;
@@ -1553,6 +1635,42 @@ body.tv-mode {
 .mx-rr-rat.ok    { color:#fbbf24; background:rgba(251,191,36,.18); }
 .mx-rr-rat.bad   { color:#f87171; background:rgba(248,113,113,.18); }
 
+/* Match facts row above the pitch */
+.mx-facts-row {
+  display:flex; gap:0; flex-shrink:0;
+  border-top:1px solid rgba(255,255,255,.06);
+  min-height:0;
+}
+.mx-facts-col {
+  flex:1; display:flex; flex-direction:column;
+  gap:1px; padding:2px .4vw;
+}
+.mx-facts-col.away { align-items:flex-end; }
+.mx-fact {
+  display:flex; align-items:center; gap:2px;
+  white-space:nowrap;
+}
+.mx-fact-min {
+  font-family:'Space Mono',monospace;
+  font-size:clamp(5px,.55vw,7px); color:rgba(251,191,36,.6);
+}
+.mx-fact-nm {
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:clamp(5px,.6vw,8px); color:rgba(255,255,255,.7);
+}
+
+/* Roster side-by-side layout */
+.mx-roster-cols {
+  display:flex; height:100%;
+}
+.mx-roster-col {
+  flex:1; min-width:0;
+}
+.mx-roster-partition {
+  width:1px; flex-shrink:0;
+  background:rgba(255,255,255,.1);
+}
+
 /* No lineup */
 .mx-no-lineup {
   flex:1; min-height:0; overflow-y:auto;
@@ -1626,7 +1744,7 @@ body.tv-mode {
 .sch-tbl td.neg { color:rgba(255,100,100,.8); }
 
 /* Bracket area */
-.sch-bracket { flex:1; display:flex; flex-direction:column; gap:.4vh; min-width:0; overflow:hidden; }
+.sch-bracket { flex:1; display:flex; flex-direction:column; gap:.4vh; min-width:0; overflow:hidden; padding:0 16px; }
 .sch-bracket-labels {
   display:grid; grid-template-columns:1fr 1fr 1fr 1fr 130px 1fr 1fr 1fr 1fr;
   flex-shrink:0; text-align:center;
@@ -1643,7 +1761,7 @@ body.tv-mode {
 .fin-lbl .bk-lbl-round { color:rgba(255,255,255,.75); letter-spacing:.14em; }
 .fin-lbl .bk-lbl-date  { color:rgba(251,191,36,.55); }
 
-.sch-bracket-body { flex:1; display:flex; align-items:stretch; overflow:hidden; gap:0; }
+.sch-bracket-body { flex:1; display:flex; align-items:stretch; overflow:visible; gap:0; }
 
 .bk-half { flex:1; display:flex; align-items:stretch; min-width:0; }
 .bk-half.left  { flex-direction:row; }

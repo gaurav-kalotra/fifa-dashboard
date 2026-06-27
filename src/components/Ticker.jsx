@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { ab, flagUrl } from '../utils'
 import playerManifest from '../playerManifest.json'
+import PLAYER_NUMBERS, { PLAYER_TEAMS } from '../playerNumbers'
 
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
 const ESPN_ATHLETE = id =>
@@ -92,7 +93,9 @@ function awardItem(rank, player, ctx, type) {
   return {
     ctx,
     ctxAward: true,
-    text: `${rank}. ${player.name}`,
+    rank,
+    text: player.name,
+    number: PLAYER_NUMBERS[player.name] ?? null,
     photo: localPhoto(player.name),
     teams: [player.team],
     type,
@@ -133,18 +136,24 @@ export default function Ticker({ matches, groups, isTV }) {
     const played = matches.filter(m => m.score?.ft)
     const seed = played.length
 
-    // Award blocks — each scrolls consecutively
-    const goldenBallBlock  = GOLDEN_BALL.map((p, i) => awardItem(i + 1, p, '🏅', 'stat'))
-    const goldenGloveBlock = GOLDEN_GLOVE.map((p, i) => awardItem(i + 1, p, '🧤', 'stat'))
-    const bestYoungBlock   = BEST_YOUNG.map((p, i) => awardItem(i + 1, p, '🌟', 'stat'))
+    // Award blocks — capped at 5 in TV mode so all 4 lists get airtime
+    const cap = isTV ? 5 : 99
+    const goldenBallBlock  = GOLDEN_BALL.slice(0, cap).map((p, i) => awardItem(i + 1, p, '🏅', 'stat'))
+    const goldenGloveBlock = GOLDEN_GLOVE.slice(0, cap).map((p, i) => awardItem(i + 1, p, '🧤', 'stat'))
+    const bestYoungBlock   = BEST_YOUNG.slice(0, cap).map((p, i) => awardItem(i + 1, p, '🌟', 'stat'))
 
-    const goldenBootBlock = espnScorers.map((s, i) => ({
-      ctx: '🥾', ctxAward: true,
-      text: `${i + 1}. ${s.name} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
-      photo: s.photo,
-      teams: s.team ? [s.team] : [],
-      type: 'stat',
-    }))
+    const goldenBootBlock = espnScorers.slice(0, cap).map((s, i) => {
+      const natTeam = PLAYER_TEAMS[s.name] || s.team || ''
+      return {
+        ctx: '🥾', ctxAward: true,
+        rank: i + 1,
+        text: `${s.name} – ${s.goals} goal${s.goals !== 1 ? 's' : ''}`,
+        number: PLAYER_NUMBERS[s.name] ?? null,
+        photo: s.photo,
+        teams: natTeam ? [natTeam] : [],
+        type: 'stat',
+      }
+    })
 
     // Filler: live stats + history (shuffled individually)
     const filler = []
@@ -192,7 +201,7 @@ export default function Ticker({ matches, groups, isTV }) {
 
   if (!items.length) return null
 
-  const displayItems = isTV ? items.slice(0, 12) : items
+  const displayItems = isTV ? items.slice(0, 40) : items
   const duration = Math.max(360, displayItems.length * 22)
   const doubled = [...displayItems, ...displayItems]
 
@@ -208,22 +217,28 @@ export default function Ticker({ matches, groups, isTV }) {
           key={`tk-${items.length}`}
           style={{ animationDuration: `${duration}s` }}
         >
-          {doubled.map((item, i) => (
-            <span key={i} className={`ticker-item ${item.type}`}>
-              {(!isTV && item.photo)
+          {doubled.map((item, i) => {
+            const tkFlag = item.teams?.length === 1 ? flagUrl(item.teams[0]) : null
+            return (
+            <span key={i} className={`ticker-item ${item.type}`}
+              style={tkFlag ? { '--tkflag': `url("${tkFlag}")` } : {}}>
+              <span className={item.ctxAward ? 'ticker-ctx ticker-award-icon' : 'ticker-ctx'}>{item.ctx}</span>
+              {item.rank != null && <span className="ticker-rank">{item.rank}</span>}
+              {item.photo
                 ? <img src={item.photo} alt="" className="ticker-player-photo" onError={e => { e.target.style.display = 'none' }} />
                 : item.icon === '🏆'
                   ? <img src="/assets/wc-trophy2.png" alt="" className="ticker-trophy-icon" />
                   : <span className="ticker-item-icon">{item.icon}</span>}
-              <span className={item.ctxAward ? 'ticker-ctx ticker-award-icon' : 'ticker-ctx'}>{item.ctx}</span>
               {item.text}
+              {item.number != null && <span className="ticker-jersey">#{item.number}</span>}
               {item.teams?.map(t => {
                 const f = flagUrl(t)
                 return f ? <img key={t} src={f} alt={t} className="ticker-flag" /> : null
               })}
               <span className="ticker-sep">◆</span>
             </span>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

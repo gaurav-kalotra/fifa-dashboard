@@ -1,5 +1,8 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { ab, flagUrl, buildTeamStatusMap, computeGroups } from '../utils'
+import { MOCK_LIVE_MATCHES, MOCK_TIMELINES, MOCK_LINEUPS, MOCK_SOFA_DATA, MOCK_FIFA_MAP } from '../data/mockLive'
+
+const DEMO = new URLSearchParams(window.location.search).has('demo')
 
 // WC2026 host city → 2-letter state/province/state code
 const CITY_STATE = {
@@ -148,8 +151,13 @@ function parseFifaLineup(data) {
       photo: p.PlayerPicture?.PictureUrl || null, jerseyImg: null,
       formationPlace: p.FormationPlace || 99, rating: null,
     }))
-    if (side === 'home') { result.home = players; result.homeFormation = td.Tactics || ''; result.homeCoach = hc?.Name?.[0]?.Description || '' }
-    else                 { result.away = players; result.awayFormation = td.Tactics || ''; result.awayCoach = hc?.Name?.[0]?.Description || '' }
+    const bench = allP.filter(p => !starters.includes(p)).slice(0, 12).map(p => ({
+      id: p.IdPlayer, name: p.ShortName?.[0]?.Description || p.PlayerName?.[0]?.Description || '',
+      jersey: String(p.ShirtNumber ?? ''), pos: FIFA_POS_ABBR[p.Position] || 'M',
+      photo: p.PlayerPicture?.PictureUrl || null, jerseyImg: null, formationPlace: 99, rating: null,
+    }))
+    if (side === 'home') { result.home = players; result.homeBench = bench; result.homeFormation = td.Tactics || ''; result.homeCoach = hc?.Name?.[0]?.Description || '' }
+    else                 { result.away = players; result.awayBench = bench; result.awayFormation = td.Tactics || ''; result.awayCoach = hc?.Name?.[0]?.Description || '' }
   }
   return result
 }
@@ -352,13 +360,17 @@ const AWAY_COL_Y = [58, 43, 29, 15]  // ATT→MID→DEF→GK (away GK at top)
 const HOME_COL_Y = [42, 57, 71, 85]  // ATT→MID→DEF→GK (home GK at bottom)
 
 function VPlayer({ player, x, y }) {
+  const [photoErr, setPhotoErr] = useState(false)
   const hasGoal   = player.goals > 0
   const hasAssist = (player.assists || 0) > 0
   const hasCard   = player.yellows > 0 || player.reds > 0
+  const photo = player.photo && !photoErr ? player.photo : null
   return (
     <div className="mx-vp" style={{left:`${x}%`,top:`${y}%`}}>
       <div className="mx-vp-badge">
-        <span className="mx-vp-num">{player.jersey}</span>
+        {photo
+          ? <img src={photo} alt="" className="mx-vp-photo" onError={() => setPhotoErr(true)} />
+          : <span className="mx-vp-num">{player.jersey}</span>}
         {(hasGoal || hasAssist || hasCard) && (
           <div className="mx-vp-events">
             {Array.from({length:player.goals}).map((_,i)=>(
@@ -420,11 +432,17 @@ function RosterRow({ player }) {
 function RosterList({ home, away, homeAbbr, awayAbbr }) {
   return (
     <div className="mx-roster">
-      <div className="mx-roster-thdr">{homeAbbr}</div>
-      {home.map((p, i) => <RosterRow key={p.id || `h${i}`} player={p} />)}
-      <div className="mx-roster-sep" />
-      <div className="mx-roster-thdr">{awayAbbr}</div>
-      {away.map((p, i) => <RosterRow key={p.id || `a${i}`} player={p} />)}
+      <div className="mx-roster-cols">
+        <div className="mx-roster-col">
+          <div className="mx-roster-thdr">{homeAbbr}</div>
+          {home.map((p, i) => <RosterRow key={p.id || `h${i}`} player={p} />)}
+        </div>
+        <div className="mx-roster-partition" />
+        <div className="mx-roster-col">
+          <div className="mx-roster-thdr">{awayAbbr}</div>
+          {away.map((p, i) => <RosterRow key={p.id || `a${i}`} player={p} />)}
+        </div>
+      </div>
     </div>
   )
 }
@@ -461,6 +479,28 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers }) {
           <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
         </div>
       </div>
+      {/* Match facts: goals/cards per team above the pitch */}
+      <div className="mx-facts-row">
+        <div className="mx-facts-col home">
+          {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>(
+            <span key={i} className="mx-fact">
+              {e.min && <span className="mx-fact-min">{e.min}'</span>}
+              <EventIcon type={e.type} />
+              {e.player && <span className="mx-fact-nm">{jerseyName(e.player)}</span>}
+            </span>
+          ))}
+        </div>
+        <div className="mx-facts-col away">
+          {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>(
+            <span key={i} className="mx-fact">
+              {e.min && <span className="mx-fact-min">{e.min}'</span>}
+              <EventIcon type={e.type} />
+              {e.player && <span className="mx-fact-nm">{jerseyName(e.player)}</span>}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <div className="mx-vpitch">
         {/* Team / formation labels at very edges */}
         <div className="mx-vp-tlabel" style={{top:'2%',left:'50%',transform:'translateX(-50%)'}}>
@@ -492,7 +532,7 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers }) {
         )}
       </div>
       <RosterList
-        home={homePlayers} away={awayPlayers}
+        home={lineup?.homeBench||[]} away={lineup?.awayBench||[]}
         homeAbbr={homeAbbr} awayAbbr={awayAbbr}
       />
       {subEvts.length > 0 && (
@@ -585,10 +625,10 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
   const venue = fifaInfo?.venue || null
   const mk = fifaInfo?.mk
   const timeline = showDetails && (played||isLive) ? (timelines?.[mk]||[]) : []
-  const homeEvts = timeline.filter(e=>e.side==='home')
-  const awayEvts = timeline.filter(e=>e.side==='away')
+  const homeEvts = timeline.filter(e=>e.side==='home' && e.type!=='sub')
+  const awayEvts = timeline.filter(e=>e.side==='away' && e.type!=='sub')
   // Events without side info (ESPN fallback) — split half/half
-  const noSideEvts = timeline.filter(e=>!e.side)
+  const noSideEvts = timeline.filter(e=>!e.side && e.type!=='sub')
   const homeDisplay = homeEvts.length>0 ? homeEvts : noSideEvts.slice(0, Math.ceil(noSideEvts.length/2))
   const awayDisplay = awayEvts.length>0 ? awayEvts : noSideEvts.slice(Math.ceil(noSideEvts.length/2))
 
@@ -614,7 +654,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
           <div className="mx-row-events home">
             {homeDisplay.map((e,i)=>(
               <span key={i} className="mx-row-evt">
-                {e.player&&<>{e.player} </>}<EventIcon type={e.type}/>{e.min&&<> {e.min}'</>}
+                {e.player&&<>{jerseyName(e.player)} </>}<EventIcon type={e.type}/>{e.min&&<> {e.min}'</>}
               </span>
             ))}
           </div>
@@ -665,7 +705,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
           <div className="mx-row-events away">
             {awayDisplay.map((e,i)=>(
               <span key={i} className="mx-row-evt">
-                {e.min&&<>{e.min}' </>}<EventIcon type={e.type}/>{e.player&&<> {e.player}</>}
+                {e.min&&<>{e.min}' </>}<EventIcon type={e.type}/>{e.player&&<> {jerseyName(e.player)}</>}
               </span>
             ))}
           </div>
@@ -781,6 +821,15 @@ export default function Matches({ matches, groups, onLiveChange }) {
       .format(new Date(Date.now()+offset*86400000)).replace(/-/g,'')
 
     const load = async () => {
+      if (DEMO) {
+        setLiveMatches(MOCK_LIVE_MATCHES)
+        setTimelines(MOCK_TIMELINES)
+        setLineups(MOCK_LINEUPS)
+        setSofaData(MOCK_SOFA_DATA)
+        setFifaMap(prev => ({ ...prev, ...MOCK_FIFA_MAP }))
+        return
+      }
+
       const newMap = {}        // key → match metadata
       const espnIds = {}       // key → ESPN event id (for summary fallback)
       const newTimelines = {}
@@ -814,7 +863,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             mk: `espn:${ev.id}`, date: ev.date,
             venue: appendState([comp.venue?.fullName||comp.venue?.shortName, comp.venue?.address?.city||comp.venue?.city].filter(Boolean).join(', ')),
             state, clock: ev.status?.displayClock||'',
-            isHT: (ev.status?.type?.name||'').toLowerCase().includes('half')
+            isHT: ['halftime','half-time','half time'].includes((ev.status?.type?.name||'').toLowerCase())
                   || (ev.status?.displayClock||'').toUpperCase() === 'HT',
             liveScore:  state==='in'   ? sc : null,
             postScore:  state==='post' ? sc : null,
@@ -827,13 +876,13 @@ export default function Matches({ matches, groups, onLiveChange }) {
       if (fifaResult.status==='fulfilled') {
         calResults = fifaResult.value.Results || []
         for (const m of calResults) {
-          const hA = (m.HomeTeam?.Abbreviation||'').toUpperCase()
-          const aA = (m.AwayTeam?.Abbreviation||'').toUpperCase()
+          const hA = (m.Home?.Abbreviation||m.HomeTeam?.Abbreviation||'').toUpperCase()
+          const aA = (m.Away?.Abbreviation||m.AwayTeam?.Abbreviation||'').toUpperCase()
           if (!hA||!aA) continue
           const key   = rawAbKey(hA,aA)
           const s     = m.MatchStatus   // 0=upcoming, 3=live, >=4=finished
           const state = s===3 ? 'in' : s>=4 ? 'post' : 'pre'
-          const sc    = [m.HomeTeam.Score??0, m.AwayTeam.Score??0]
+          const sc    = [m.HomeTeamScore??m.Home?.Score??0, m.AwayTeamScore??m.Away?.Score??0]
           const existing = newMap[key]||{}
           newMap[key] = {
             mk:        `${m.IdStage}/${m.IdMatch}`,
