@@ -354,12 +354,36 @@ function HalfPitch({ players, side='home', coach='' }) {
 }
 
 // ── Vertical pitch (side panels during live games) ────────────
-// posRow: 0=ATT,1=MID,2=DEF,3=GK.  y=0% is top of pitch, 100% is bottom.
-// Home attacks upward (GK at bottom=85%), away attacks downward (GK at top=15%).
-const AWAY_COL_Y = [58, 43, 29, 15]  // ATT→MID→DEF→GK (away GK at top)
-const HOME_COL_Y = [42, 57, 71, 85]  // ATT→MID→DEF→GK (home GK at bottom)
+// Parses formation string into rows of players, respecting multi-line midfields.
+// FIFA returns players in natural formation order (GK→DEF→MID→FWD), so slicing
+// by the formation numbers gives the right groups even without FormationPlace.
+function assignToRows(players, formationStr) {
+  const gks = players.filter(p => p.pos === 'GK')
+  const out  = players.filter(p => p.pos !== 'GK')
+  const fParts = (formationStr || '').split('-').map(Number).filter(n => n > 0 && n <= 6)
+  const rows = [gks]
+  if (fParts.length && fParts.reduce((a, b) => a + b, 0) === out.length) {
+    // formation string matches player count — slice accordingly (back to front)
+    let idx = 0
+    for (const n of fParts) { rows.push(out.slice(idx, idx + n)); idx += n }
+  } else {
+    // fallback: bucket by position type
+    const byR = {}
+    for (const p of out) { const r = posRow(p.pos); (byR[r] = byR[r] || []).push(p) }
+    for (const r of [2, 1, 0]) if (byR[r]?.length) rows.push(byR[r])
+  }
+  return rows
+}
+// Evenly space rows between GK line and forward line, dynamic for any formation depth.
+function rowYs(n, isHome) {
+  if (n === 1) return [isHome ? 87 : 13]
+  // Each team strictly in their own half: home GK=88%→FWD=62%, away GK=12%→FWD=38%
+  // 24% neutral gap between forward lines prevents badge overlap
+  const hi = isHome ? 88 : 12, lo = isHome ? 62 : 38
+  return Array.from({ length: n }, (_, i) => hi + (i / (n - 1)) * (lo - hi))
+}
 
-function VPlayer({ player, x, y }) {
+function VPlayer({ player, x, y, isHome }) {
   const [photoErr, setPhotoErr] = useState(false)
   const hasGoal   = player.goals > 0
   const hasAssist = (player.assists || 0) > 0
@@ -367,7 +391,7 @@ function VPlayer({ player, x, y }) {
   const photo = player.photo && !photoErr ? player.photo : null
   return (
     <div className="mx-vp" style={{left:`${x}%`,top:`${y}%`}}>
-      <div className="mx-vp-badge">
+      <div className={`mx-vp-badge ${isHome ? 'home' : 'away'}`}>
         {photo
           ? <img src={photo} alt="" className="mx-vp-photo" onError={() => setPhotoErr(true)} />
           : <span className="mx-vp-num">{player.jersey}</span>}
@@ -383,6 +407,10 @@ function VPlayer({ player, x, y }) {
         )}
         {player.subbedOff && <span className="mx-vp-suboff">↓</span>}
       </div>
+      <div className="mx-vp-name">
+        <span className="mx-vp-jnum">#{player.jersey}</span>
+        {' '}{jerseyName(player.name)}
+      </div>
     </div>
   )
 }
@@ -396,6 +424,21 @@ function VCoach({ name, y }) {
       <span className="mx-vp-coach-nm">{lastName}</span>
     </div>
   )
+}
+
+// Bench strip on the pitch — small pill per player, laid out horizontally at a fixed Y
+function VBenchStrip({ players, y, isHome }) {
+  if (!players.length) return null
+  const spreadX = (i, n) => n <= 1 ? 50 : 10 + (i / (n - 1)) * 80
+  return <>
+    {players.slice(0, 7).map((p, i) => (
+      <div key={p.id||`b${i}`} className={`mx-vb ${isHome?'home':'away'}`}
+        style={{ left: `${spreadX(i, Math.min(players.length,7))}%`, top: `${y}%` }}>
+        <span className="mx-vb-jn">{p.jersey||'?'}</span>
+        <span className="mx-vb-nm">{jerseyName(p.name)}</span>
+      </div>
+    ))}
+  </>
 }
 
 // ── Roster (separate from pitch) ──────────────────────────────
@@ -456,11 +499,11 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers }) {
   const homePlayers = mergeWithSofa(annotatePlayerEvents(lineup?.home||[], homeEvts), sofaPlayers?.home)
   const awayPlayers = mergeWithSofa(annotatePlayerEvents(lineup?.away||[], awayEvts), sofaPlayers?.away)
 
-  const homeCols = [[],[],[],[]]
-  for (const p of homePlayers) homeCols[Math.min(posRow(p.pos),3)].push(p)
-  const awayCols = [[],[],[],[]]
-  for (const p of awayPlayers) awayCols[Math.min(posRow(p.pos),3)].push(p)
-  const spreadX = (i,n) => n<=1 ? 50 : 15+(i/(n-1))*70
+  const homeRows = assignToRows(homePlayers, lineup?.homeFormation)
+  const awayRows = assignToRows(awayPlayers, lineup?.awayFormation)
+  const homeYs   = rowYs(homeRows.length, true)
+  const awayYs   = rowYs(awayRows.length, false)
+  const spreadX  = (i, n) => n <= 1 ? 50 : 15 + (i / (n - 1)) * 70
 
   const { homeAbbr, awayAbbr, homeScore, awayScore, clock, isHT } = liveMatch
   return (
@@ -521,32 +564,19 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers }) {
         <div className="mx-vp-half" />
         <div className="mx-vp-dot" />
 
-        {awayCols.map((col,ci)=>col.map((p,i)=>(
-          <VPlayer key={`a${p.id||`${ci}-${i}`}`} player={p} x={spreadX(i,col.length)} y={AWAY_COL_Y[ci]} />
+        {awayRows.map((row,ri)=>row.map((p,pi)=>(
+          <VPlayer key={`a${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={awayYs[ri]} isHome={false} />
         )))}
-        {homeCols.map((col,ci)=>col.map((p,i)=>(
-          <VPlayer key={`h${p.id||`${ci}-${i}`}`} player={p} x={spreadX(i,col.length)} y={HOME_COL_Y[ci]} />
+        {homeRows.map((row,ri)=>row.map((p,pi)=>(
+          <VPlayer key={`h${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={homeYs[ri]} isHome={true} />
         )))}
+        {/* Bench strips on each team's end of the pitch */}
+        <VBenchStrip players={lineup?.awayBench||[]} y={4} isHome={false} />
+        <VBenchStrip players={lineup?.homeBench||[]} y={96} isHome={true} />
         {!homePlayers.length && !awayPlayers.length && (
           <span className="mx-vp-pending">⏱ Lineup pending</span>
         )}
       </div>
-      <RosterList
-        home={lineup?.homeBench||[]} away={lineup?.awayBench||[]}
-        homeAbbr={homeAbbr} awayAbbr={awayAbbr}
-      />
-      {subEvts.length > 0 && (
-        <div className="mx-lsp-subs">
-          {subEvts.map((e,i) => (
-            <span key={i} className="mx-lsp-sub">
-              {e.min && <span className="mx-lsp-sub-min">{e.min}'</span>}
-              <span className="mx-sub-off">{jerseyName(e.player)}<span>↓</span></span>
-              <span className="mx-sub-sep">→</span>
-              <span className="mx-sub-in">{jerseyName(e.playerOn||e.player)}<span>↑</span></span>
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

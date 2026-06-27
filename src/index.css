@@ -1444,9 +1444,9 @@ body.tv-mode {
   font-size:clamp(7px,.9vh,11px); color:#fbbf24; line-height:1;
 }
 
-/* Vertical pitch */
+/* Vertical pitch — fills all remaining card space */
 .mx-vpitch {
-  flex:3; min-height:0; position:relative;
+  flex:1; min-height:0; position:relative;
   background:repeating-linear-gradient(
     180deg,
     rgba(22,84,22,.88) 0, rgba(22,84,22,.88) 12.5%,
@@ -1491,27 +1491,35 @@ body.tv-mode {
 }
 .mx-vp-badge {
   position:relative;
-  width:clamp(20px,2.6vh,32px); height:clamp(20px,2.6vh,32px);
+  width:clamp(28px,3.8vh,46px); height:clamp(28px,3.8vh,46px);
   border-radius:50%;
   background:rgba(0,0,0,.72);
-  border:1.5px solid rgba(255,255,255,.55);
+  border:2px solid rgba(255,255,255,.5);
+  box-shadow:0 2px 6px rgba(0,0,0,.6);
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  overflow:hidden;
 }
+.mx-vp-badge.home { border-color:rgba(74,222,128,.9); box-shadow:0 0 8px rgba(74,222,128,.4); }
+.mx-vp-badge.away { border-color:rgba(96,165,250,.9); box-shadow:0 0 8px rgba(96,165,250,.4); }
 .mx-vp-num {
   font-family:'Space Mono',monospace;
-  font-size:clamp(7px,1.05vh,13px); font-weight:700; color:#fff; line-height:1;
+  font-size:clamp(9px,1.3vh,15px); font-weight:700; color:#fff; line-height:1;
 }
 .mx-vp-photo {
   width:100%; height:100%; border-radius:50%;
-  object-fit:cover; object-position:top center;
+  object-fit:cover; object-position:center 15%;
 }
 .mx-vp-name {
   font-family:'Inter',system-ui,sans-serif;
-  font-size:clamp(6px,.78vh,10px); font-weight:600; color:#fff;
-  background:rgba(0,0,0,.72); border-radius:2px; padding:0 3px;
-  white-space:nowrap; max-width:clamp(42px,4.2vw,60px);
-  overflow:hidden; text-overflow:ellipsis; line-height:1.2;
-  text-shadow:0 1px 3px rgba(0,0,0,.9);
+  font-size:clamp(6px,.72vh,9px); font-weight:600; color:rgba(255,255,255,.9);
+  background:rgba(0,0,0,.75); border-radius:2px; padding:1px 3px;
+  white-space:nowrap; max-width:clamp(44px,5vw,70px);
+  overflow:hidden; text-overflow:ellipsis; line-height:1.3;
+  text-shadow:0 1px 3px rgba(0,0,0,.9); text-align:center;
+}
+.mx-vp-jnum {
+  color:rgba(251,191,36,.9); font-family:'Space Mono',monospace;
+  font-size:clamp(5px,.62vh,8px); font-weight:700;
 }
 .mx-vp-suboff {
   position:absolute; bottom:-3px; right:-4px;
@@ -1554,6 +1562,23 @@ body.tv-mode {
 .mx-half-coach.home { left:3%; }
 .mx-half-coach.away { right:3%; }
 
+/* ── Bench strip on the vertical pitch ─────────────────────── */
+.mx-vb {
+  position:absolute; transform:translate(-50%,-50%); z-index:3;
+  display:flex; align-items:center; gap:2px;
+  background:rgba(0,0,0,.7);
+  border:1px dashed rgba(255,255,255,.35);
+  border-radius:10px; padding:1px 4px;
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:clamp(5px,.58vh,7px); font-weight:600;
+  white-space:nowrap;
+  opacity:.75;
+}
+.mx-vb.home { border-color:rgba(74,222,128,.5); color:rgba(74,222,128,.9); }
+.mx-vb.away { border-color:rgba(96,165,250,.5); color:rgba(96,165,250,.9); }
+.mx-vb-jn { color:rgba(251,191,36,.8); font-family:'Space Mono',monospace; font-size:.85em; }
+.mx-vb-nm { max-width:5ch; overflow:hidden; text-overflow:ellipsis; }
+
 /* Subs strip below roster */
 .mx-lsp-subs {
   display:flex; flex-direction:column; gap:1px;
@@ -1575,8 +1600,9 @@ body.tv-mode {
 
 /* ── Roster list (below vertical pitch) ─────────────────────── */
 .mx-roster {
-  flex:1.4; min-height:0; overflow-y:auto;
+  flex-shrink:0;
   border-top:1px solid rgba(255,255,255,.06);
+  overflow:hidden;
 }
 .mx-roster-thdr {
   font-family:'Oswald',system-ui,sans-serif;
