@@ -57,7 +57,7 @@ function FaceTicker() {
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
 const TV_TABS = ['matches', 'fixtures']
 
-const isTV = new URLSearchParams(window.location.search).get('tv') === '1'
+const isTV = true
 
 // Fewer stars for better Pi performance
 const STARS = Array.from({ length: 18 }, (_, i) => ({

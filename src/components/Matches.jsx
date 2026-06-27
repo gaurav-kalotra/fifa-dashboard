@@ -102,7 +102,9 @@ function parseFifaEventsFromTeams(fd) {
     for (const ev of team?.Events || []) {
       const kind = classifyFifaEvt(ev.Type)
       if (!kind) continue
-      const player = ev.PlayerName?.[0]?.Description || ''
+      const player = ev.PlayerName?.[0]?.Description
+        || ev.NationalTeamPlayer?.PlayerName?.[0]?.Description
+        || ev.Player?.Name?.[0]?.Description || ''
       const playerOn = kind === 'sub'
         ? (ev.SubstitutedPlayerName?.[0]?.Description || ev.PlayerName2?.[0]?.Description || '') : ''
       out.push({ min: String(ev.MatchMinute ?? ''), type: kind, player, playerOn, side })
@@ -236,7 +238,7 @@ function parseEspnTimeline(summary) {
       const xt = String(x.type?.id||''); const xn = (x.type?.text||'').toLowerCase()
       return xt==='scorer'||xt==='1'||xn.includes('scorer')
     }) || p.participants?.[0]
-    const player  = scorer?.athlete?.displayName || ''
+    const player  = scorer?.athlete?.displayName || scorer?.athlete?.shortName || ''
     const jersey  = String(scorer?.athlete?.jersey || scorer?.athlete?.jerseyNumber || '')
     const teamId  = String(p.team?.id || '')
     const side    = homeId && teamId===homeId ? 'home' : awayId && teamId===awayId ? 'away' : ''
@@ -503,6 +505,24 @@ function VCoach({ name, y }) {
   )
 }
 
+// Bench sub row — used in stats tab bench section
+function BenchSubRow({ player, side }) {
+  const [photoErr, setPhotoErr] = useState(false)
+  const photo = player.photo && !photoErr ? player.photo : null
+  const name = jerseyName(player.name)
+  return (
+    <div className={`mx-bsr ${side}`}>
+      <div className="mx-bsr-av">
+        {photo
+          ? <img src={photo} alt="" className="mx-bsr-img" onError={() => setPhotoErr(true)} />
+          : <span className="mx-bsr-jnum">{player.jersey}</span>}
+      </div>
+      <span className="mx-bsr-nm">{name || `#${player.jersey}`}</span>
+      <span className="mx-bsr-pos">{player.pos}</span>
+    </div>
+  )
+}
+
 // Bench column — vertical strip beside the pitch, top half = away bench, bottom half = home bench
 function BenchColumn({ homeBench = [], awayBench = [] }) {
   if (!homeBench.length && !awayBench.length) return null
@@ -632,6 +652,28 @@ function RosterList({ home, away, homeAbbr, awayAbbr }) {
 
 function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelSide }) {
   const [tab, setTab] = useState('lineup')
+  const tabTimerRef = useRef(null)
+
+  const atHT = liveMatch?.isHT
+
+  // Auto-switch stats tab back to lineup after 5s unless it's HT
+  const switchToStats = () => {
+    setTab('stats')
+    if (!atHT) {
+      clearTimeout(tabTimerRef.current)
+      tabTimerRef.current = setTimeout(() => setTab('lineup'), 5000)
+    }
+  }
+
+  // When HT ends, return to lineup
+  useEffect(() => {
+    if (!atHT && tab === 'stats') {
+      clearTimeout(tabTimerRef.current)
+      tabTimerRef.current = setTimeout(() => setTab('lineup'), 5000)
+    }
+    return () => clearTimeout(tabTimerRef.current)
+  }, [atHT])
+
   if (!liveMatch) return <div className="mx-live-panel-slot mx-lsp-empty" />
 
   const homeEvts = timeline.filter(e=>e.side==='home')
@@ -694,17 +736,35 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
 
       {/* Tab switcher */}
       <div className="mx-lsp-tabs">
-        <button className={`mx-lsp-tab${tab==='lineup'?' active':''}`} onClick={()=>setTab('lineup')}>Lineup</button>
-        <button className={`mx-lsp-tab${tab==='stats'?' active':''}`} onClick={()=>setTab('stats')}>Stats</button>
+        <button className={`mx-lsp-tab${tab==='lineup'?' active':''}`} onClick={()=>{clearTimeout(tabTimerRef.current);setTab('lineup')}}>Lineup</button>
+        <button className={`mx-lsp-tab${tab==='stats'?' active':''}`} onClick={switchToStats}>Stats{!atHT&&<span className="mx-lsp-tab-peek"> 5s</span>}</button>
       </div>
 
       {tab === 'stats' ? (
-        <StatsPanel stats={stats} homeAbbr={homeAbbr} awayAbbr={awayAbbr} />
+        <div className="mx-stats-tab">
+          <StatsPanel stats={stats} homeAbbr={homeAbbr} awayAbbr={awayAbbr} />
+          {(lineup?.homeBench?.length || lineup?.awayBench?.length) ? (
+            <>
+            <div className="mx-bench-label">SUBSTITUTES</div>
+            <div className="mx-bench-row">
+              <div className="mx-bench-half home">
+                <div className="mx-bench-rhdr">{homeAbbr}</div>
+                {(lineup.homeBench||[]).slice(0,9).map((p,i)=>(
+                  <BenchSubRow key={p.id||`h${i}`} player={p} side="home" />
+                ))}
+              </div>
+              <div className="mx-bench-half away">
+                <div className="mx-bench-rhdr">{awayAbbr}</div>
+                {(lineup.awayBench||[]).slice(0,9).map((p,i)=>(
+                  <BenchSubRow key={p.id||`a${i}`} player={p} side="away" />
+                ))}
+              </div>
+            </div>
+            </>
+          ) : null}
+        </div>
       ) : (
         <div className="mx-lsp-body">
-          {panelSide === 'right' && (
-            <BenchColumn homeBench={lineup?.homeBench||[]} awayBench={lineup?.awayBench||[]} />
-          )}
           <div className="mx-vpitch">
             <div className="mx-vp-tlabel" style={{top:'2%',left:'50%',transform:'translateX(-50%)'}}>
               <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag sm" onError={e=>{e.target.style.display='none'}} />
@@ -716,8 +776,8 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
               <span>{homeAbbr}</span>
               {lineup?.homeFormation && <span className="mx-vp-fmtn">{lineup.homeFormation}</span>}
             </div>
-            {lineup?.awayCoach && <VCoach name={lineup.awayCoach} y={8} />}
-            {lineup?.homeCoach && <VCoach name={lineup.homeCoach} y={92} />}
+            {lineup?.awayCoach && <VCoach name={lineup.awayCoach} y={4} />}
+            {lineup?.homeCoach && <VCoach name={lineup.homeCoach} y={96} />}
             <div className="mx-vp-half" />
             <div className="mx-vp-dot" />
             {awayRows.map((row,ri)=>row.map((p,pi)=>(
@@ -730,9 +790,6 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
               <span className="mx-vp-pending">⏱ Lineup pending</span>
             )}
           </div>
-          {panelSide === 'left' && (
-            <BenchColumn homeBench={lineup?.homeBench||[]} awayBench={lineup?.awayBench||[]} />
-          )}
         </div>
       )}
     </div>
