@@ -1044,7 +1044,7 @@ function roundNum(r) {
   return m ? +m[0] : 999
 }
 
-export default function Matches({ matches, groups, onLiveChange }) {
+export default function Matches({ matches, groups, onLiveChange, onLiveMatchesChange }) {
   const [fifaMap,      setFifaMap]      = useState({})
   const [liveMatches,  setLiveMatches]  = useState([])
   const [timelines,    setTimelines]    = useState({})
@@ -1428,6 +1428,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
   const hasLive   = liveMatches.length>0
   const liveCount = liveMatches.length
   useEffect(()=>{ onLiveChange?.(hasLive) }, [hasLive, onLiveChange])
+  useEffect(()=>{ onLiveMatchesChange?.(liveMatches) }, [liveMatches, onLiveMatchesChange])
   const safeIdx    = Math.min(currentLiveIdx, Math.max(liveCount-1,0))
   const currentLive = liveMatches[safeIdx]
 
