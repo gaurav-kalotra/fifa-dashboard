@@ -466,27 +466,16 @@ function assignToRows(players, formationStr) {
   return rows
 }
 
-// Explicit Y positions per row count — GK at own goal, DEF in defensive third,
-// MID at midfield, FWD just past center. Minimum 9% gap so badges never overlap.
-const ROW_YS_HOME = {
-  1: [92],
-  2: [92, 52],
-  3: [92, 70, 52],
-  4: [92, 77, 63, 52],
-  5: [92, 78, 66, 55, 46],
-  6: [92, 79, 69, 61, 53, 46],
-}
-const ROW_YS_AWAY = {
-  1: [8],
-  2: [8, 48],
-  3: [8, 30, 48],
-  4: [8, 23, 37, 48],
-  5: [8, 22, 34, 45, 54],
-  6: [8, 21, 31, 39, 47, 54],
-}
-function rowYs(n, isHome) {
-  const table = isHome ? ROW_YS_HOME : ROW_YS_AWAY
-  return table[Math.min(n, 6)] || table[6]
+// Compute Y positions for BOTH teams together so their forward lines are always ≥8% apart.
+// Home GK anchored at 94% (bottom), away GK at 6% (top). Both FWD lines stop at 54%/46%.
+function rowYsPair(homeN, awayN) {
+  const HOME_GK = 94, AWAY_GK = 6, HOME_FWD = 54, AWAY_FWD = 46
+  const line = (start, end, n) =>
+    n === 1 ? [start] : Array.from({length: n}, (_, i) => start + (i / (n - 1)) * (end - start))
+  return {
+    homeYs: line(HOME_GK, HOME_FWD, homeN),
+    awayYs: line(AWAY_GK, AWAY_FWD, awayN),
+  }
 }
 
 function VPlayer({ player, x, y, isHome }) {
@@ -711,8 +700,7 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
 
   const homeRows = assignToRows(homePlayers, lineup?.homeFormation)
   const awayRows = assignToRows(awayPlayers, lineup?.awayFormation)
-  const homeYs   = rowYs(homeRows.length, true)
-  const awayYs   = rowYs(awayRows.length, false)
+  const { homeYs, awayYs } = rowYsPair(homeRows.length, awayRows.length)
   // Tighter spread for small groups (CDMs), wider for large rows (back 4)
   const spreadX = (i, n) => {
     if (n <= 1) return 50
@@ -1093,10 +1081,10 @@ export default function Matches({ matches, groups, onLiveChange }) {
   }, [liveMatches.length])
   useEffect(() => { setCurrentLiveIdx(0) }, [liveMatches.length])
 
-  // Side-panel mode: enter at 2+ live, exit only when BOTH finish
+  // Side-panel mode: enter with 1+ live game, exit only when ALL finish
   // sidePanelMks remembers which 2 games are pinned so they stay visible after FT
   useEffect(() => {
-    if (liveMatches.length >= 2) {
+    if (liveMatches.length >= 1) {
       setSidePanelMode(true)
       setSidePanelMks(prev => {
         // Only replace a slot if it's empty or that game is now gone from liveMatches
@@ -1516,14 +1504,16 @@ export default function Matches({ matches, groups, onLiveChange }) {
                 />
               )}
             </div>
-            <LiveSidePanel
-              liveMatch={panelMatch[1]}
-              timeline={panelMatch[1] ? (timelines[panelMatch[1].mk]||[]) : []}
-              lineup={panelMatch[1] ? lineups[panelMatch[1].mk] : null}
-              sofaPlayers={sofaData[panelMatch[1]?.mk]}
-              stats={statsMap[panelMatch[1]?.mk]}
-              panelSide="right"
-            />
+            {panelMatch[1] && (
+              <LiveSidePanel
+                liveMatch={panelMatch[1]}
+                timeline={timelines[panelMatch[1].mk]||[]}
+                lineup={lineups[panelMatch[1].mk]}
+                sofaPlayers={sofaData[panelMatch[1].mk]}
+                stats={statsMap[panelMatch[1].mk]}
+                panelSide="right"
+              />
+            )}
           </>
         ) : (
           visible.map(({ round:[name,ms], idx })=>(
