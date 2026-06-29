@@ -456,9 +456,9 @@ function assignToRows(players, formationStr) {
 }
 
 function rowYs(n, isHome) {
-  if (n === 1) return [isHome ? 90 : 10]
-  // Wider range per team to spread players out; 14% gap between forward lines
-  const hi = isHome ? 91 : 9, lo = isHome ? 57 : 43
+  if (n === 1) return [isHome ? 92 : 8]
+  // GK hugs own goal, FWD stops just past center — 40% range gives ~10-13% between rows
+  const hi = isHome ? 92 : 8, lo = isHome ? 54 : 46
   return Array.from({ length: n }, (_, i) => hi + (i / (n - 1)) * (lo - hi))
 }
 
@@ -689,7 +689,7 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
   // Tighter spread for small groups (CDMs), wider for large rows (back 4)
   const spreadX = (i, n) => {
     if (n <= 1) return 50
-    const pad = n <= 2 ? 26 : n <= 3 ? 14 : n <= 4 ? 9 : 7
+    const pad = n <= 2 ? 28 : n <= 3 ? 20 : n <= 4 ? 14 : n <= 5 ? 10 : 8
     return pad + (i / (n - 1)) * (100 - 2 * pad)
   }
 
@@ -776,8 +776,8 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
               <span>{homeAbbr}</span>
               {lineup?.homeFormation && <span className="mx-vp-fmtn">{lineup.homeFormation}</span>}
             </div>
-            {lineup?.awayCoach && <VCoach name={lineup.awayCoach} y={4} />}
-            {lineup?.homeCoach && <VCoach name={lineup.homeCoach} y={96} />}
+            {lineup?.awayCoach && <VCoach name={lineup.awayCoach} y={2} />}
+            {lineup?.homeCoach && <VCoach name={lineup.homeCoach} y={98} />}
             <div className="mx-vp-half" />
             <div className="mx-vp-dot" />
             {awayRows.map((row,ri)=>row.map((p,pi)=>(
@@ -1033,7 +1033,16 @@ function RoundBlock({ roundName, ms, highlight, dayOffset, showDetails, fifaMap,
 }
 
 // ── Main export ───────────────────────────────────────────────
-function roundNum(r) { const m=r?.match(/\d+/); return m ? +m[0] : 999 }
+function roundNum(r) {
+  const s = (r || '').toLowerCase()
+  if (s.includes('final') && !s.includes('semi') && !s.includes('quarter')) return 300
+  if (s.includes('semi')) return 280
+  if (s.includes('quarter')) return 260
+  if (s.includes('16')) return 240
+  if (s.includes('32')) return 220
+  const m = r?.match(/\d+/)
+  return m ? +m[0] : 999
+}
 
 export default function Matches({ matches, groups, onLiveChange }) {
   const [fifaMap,      setFifaMap]      = useState({})
@@ -1388,7 +1397,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
 
   const { rounds, activeIdx } = useMemo(()=>{
     const byRound = {}
-    for (const m of augMatches.filter(m=>m.group)) {
+    for (const m of augMatches) {
       if (!byRound[m.round]) byRound[m.round]=[]
       byRound[m.round].push(m)
     }
