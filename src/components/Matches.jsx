@@ -455,11 +455,27 @@ function assignToRows(players, formationStr) {
   return rows
 }
 
+// Explicit Y positions per row count — GK at own goal, DEF in defensive third,
+// MID at midfield, FWD just past center. Minimum 9% gap so badges never overlap.
+const ROW_YS_HOME = {
+  1: [92],
+  2: [92, 52],
+  3: [92, 70, 52],
+  4: [92, 77, 63, 52],
+  5: [92, 78, 66, 55, 46],
+  6: [92, 79, 69, 61, 53, 46],
+}
+const ROW_YS_AWAY = {
+  1: [8],
+  2: [8, 48],
+  3: [8, 30, 48],
+  4: [8, 23, 37, 48],
+  5: [8, 22, 34, 45, 54],
+  6: [8, 21, 31, 39, 47, 54],
+}
 function rowYs(n, isHome) {
-  if (n === 1) return [isHome ? 92 : 8]
-  // GK hugs own goal, FWD stops just past center — 40% range gives ~10-13% between rows
-  const hi = isHome ? 92 : 8, lo = isHome ? 54 : 46
-  return Array.from({ length: n }, (_, i) => hi + (i / (n - 1)) * (lo - hi))
+  const table = isHome ? ROW_YS_HOME : ROW_YS_AWAY
+  return table[Math.min(n, 6)] || table[6]
 }
 
 function VPlayer({ player, x, y, isHome }) {
