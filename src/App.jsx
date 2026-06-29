@@ -5,7 +5,6 @@ import Matches from './components/Matches'
 import Games from './components/Games'
 import Standings from './components/Standings'
 import Bracket from './components/Bracket'
-import { ab } from './utils'
 import Schedule from './components/Schedule'
 import Ticker from './components/Ticker'
 import playerManifest from './playerManifest.json'
@@ -56,7 +55,7 @@ function FaceTicker() {
 }
 
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
-const TV_TABS = ['matches', 'fixtures', 'bracket']
+const TV_TABS = ['matches', 'fixtures']
 
 const isTV = true
 
@@ -161,7 +160,6 @@ export default function App() {
   }, [])
 
   const [hasLive, setHasLive] = useState(false)
-  const [liveMatches, setLiveMatches] = useState([])
   const hasLiveRef = useRef(false)
   useEffect(() => { hasLiveRef.current = hasLive }, [hasLive])
 
@@ -190,7 +188,7 @@ export default function App() {
               {TV_TABS.map(t => (
                 <button key={t} className={`tv-tab-pip${tab === t ? ' active' : ''}`}
                   onClick={() => switchTab(t)}>
-                  {t === 'matches' ? 'MATCHES' : t === 'fixtures' ? 'FIXTURES' : 'BRACKET'}
+                  {t === 'matches' ? 'MATCHES' : 'FIXTURES'}
                 </button>
               ))}
             </div>
@@ -201,13 +199,10 @@ export default function App() {
 
         {/* Both components stay mounted so live-state (sidePanelMode etc.) survives tab switches */}
         <div className="tv-content" style={{display: tab === 'matches' ? '' : 'none'}}>
-          <Matches matches={matches} groups={groups} onLiveChange={setHasLive} onLiveMatchesChange={setLiveMatches} />
+          <Matches matches={matches} groups={groups} onLiveChange={setHasLive} />
         </div>
         <div className="tv-content" style={{display: tab === 'fixtures' ? '' : 'none'}}>
           <Schedule groups={groups} matches={matches} />
-        </div>
-        <div className="tv-content" style={{display: tab === 'bracket' ? '' : 'none'}}>
-          <Bracket matches={matches} groups={groups} liveMatches={liveMatches} />
         </div>
 
         <Ticker matches={matches} groups={groups} isTV={isTV} />

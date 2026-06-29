@@ -440,14 +440,25 @@ function HalfPitch({ players, side='home', coach='' }) {
 
 // ── Vertical pitch (side panels during live games) ────────────
 function assignToRows(players, formationStr) {
-  const gks = players.filter(p => p.pos === 'GK')
-  const out  = players.filter(p => p.pos !== 'GK')
-  const fParts = (formationStr || '').split('-').map(Number).filter(n => n > 0 && n <= 6)
+  // 'G' and 'GK' both mean goalkeeper across different data sources
+  const gks = players.filter(p => p.pos === 'GK' || p.pos === 'G')
+  // Sort outfield players by formationPlace (FIFA API: slot 1=GK, then DEF→MID→FWD in order)
+  // so that splitting by formation string gives correct rows regardless of position label
+  const out = [...players.filter(p => p.pos !== 'GK' && p.pos !== 'G')]
+    .sort((a, b) => (a.formationPlace || 99) - (b.formationPlace || 99))
+
+  const fStr = (formationStr || '').trim()
+  // Handle both "4-3-3" / "4 3 3" (with separators) and "433" / "4231" (no separator) formats
+  const fParts = /^\d+$/.test(fStr)
+    ? fStr.split('').map(Number).filter(n => n > 0 && n <= 6)
+    : fStr.split(/[-\s]+/).map(Number).filter(n => n > 0 && n <= 6)
+
   const rows = [gks]
   if (fParts.length && fParts.reduce((a, b) => a + b, 0) === out.length) {
     let idx = 0
     for (const n of fParts) { rows.push(out.slice(idx, idx + n)); idx += n }
   } else {
+    // Fallback: group by broad position category
     const byR = {}
     for (const p of out) { const r = posRow(p.pos); (byR[r] = byR[r] || []).push(p) }
     for (const r of [2, 1, 0]) if (byR[r]?.length) rows.push(byR[r])
@@ -1060,7 +1071,7 @@ function roundNum(r) {
   return m ? +m[0] : 999
 }
 
-export default function Matches({ matches, groups, onLiveChange, onLiveMatchesChange }) {
+export default function Matches({ matches, groups, onLiveChange }) {
   const [fifaMap,      setFifaMap]      = useState({})
   const [liveMatches,  setLiveMatches]  = useState([])
   const [timelines,    setTimelines]    = useState({})
@@ -1444,7 +1455,6 @@ export default function Matches({ matches, groups, onLiveChange, onLiveMatchesCh
   const hasLive   = liveMatches.length>0
   const liveCount = liveMatches.length
   useEffect(()=>{ onLiveChange?.(hasLive) }, [hasLive, onLiveChange])
-  useEffect(()=>{ onLiveMatchesChange?.(liveMatches) }, [liveMatches, onLiveMatchesChange])
   const safeIdx    = Math.min(currentLiveIdx, Math.max(liveCount-1,0))
   const currentLive = liveMatches[safeIdx]
 

@@ -126,6 +126,8 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isG
 
   const jitter1 = greenSpotRow === 1 || redSpotRow === 1 || elimSpotRow === 1
   const jitter2 = greenSpotRow === 2 || redSpotRow === 2 || elimSpotRow === 2
+  const loser1  = played && !win1
+  const loser2  = played && !win2
 
   return (
     <div className={cls}>
@@ -133,12 +135,12 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isG
         <span className="bk-snum">M{num}</span>
         {dateStr && <span className="bk-date">{dateStr}</span>}
       </div>
-      <div className={`bk-row${win1 ? ' win' : ''}${jitter1 ? ' bk-jitter-row' : ''}`}>
+      <div className={`bk-row${win1 ? ' win' : loser1 ? ' bk-loser' : ''}${jitter1 ? ' bk-jitter-row' : ''}`}>
         <Flag name={t1} cls="bk-flag" />
         <span className="bk-name">{t1 ? ab(t1) : m.team1}</span>
         {played && <span className="bk-s">{s1}</span>}
       </div>
-      <div className={`bk-row${win2 ? ' win' : ''}${jitter2 ? ' bk-jitter-row' : ''}`}>
+      <div className={`bk-row${win2 ? ' win' : loser2 ? ' bk-loser' : ''}${jitter2 ? ' bk-jitter-row' : ''}`}>
         <Flag name={t2} cls="bk-flag" />
         <span className="bk-name">{t2 ? ab(t2) : m.team2}</span>
         {played && <span className="bk-s">{s2}</span>}
@@ -359,17 +361,7 @@ export default function Schedule({ groups, matches }) {
 
   return (
     <div className="sch-layout">
-      {/* Groups A–F */}
-      <div className="sch-groups-panel left">
-        <div className="sch-panel-title">⚽ Groups A–F</div>
-        <div className="sch-groups-col">
-          {LEFT_GROUPS.map(g => (
-            <GroupTable key={g} letter={g} entries={groups[g]} spotlight={sp} />
-          ))}
-        </div>
-      </div>
-
-      {/* Bracket tree */}
+      {/* Bracket tree — full width, no group panels */}
       <div className="sch-bracket">
         <div className="sch-bracket-labels">
           {ROUND_DATES.map(({ round, date }) => (
@@ -397,16 +389,6 @@ export default function Schedule({ groups, matches }) {
           <BracketHalf half={RIGHT} byNum={byNum} resolve={resolve} side="right"
             todayNums={todayNums} potentialNums={potentialNums}
             greenSlots={gs} redSlots={rs} elimSlots={es} />
-        </div>
-      </div>
-
-      {/* Groups G–L */}
-      <div className="sch-groups-panel right">
-        <div className="sch-panel-title">Groups G–L ⚽</div>
-        <div className="sch-groups-col">
-          {RIGHT_GROUPS.map(g => (
-            <GroupTable key={g} letter={g} entries={groups[g]} spotlight={sp} />
-          ))}
         </div>
       </div>
     </div>
