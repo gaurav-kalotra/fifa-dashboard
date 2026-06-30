@@ -1478,10 +1478,14 @@ export default function Matches({ matches, groups, onLiveChange }) {
             />
             <div className="mx-sp-center">
               {rounds[activeIdx] && (() => {
-                const todayUTC = new Date().toISOString().slice(0, 10)
+                const now = new Date()
                 const todayMs = rounds[activeIdx][1].filter(m => {
                   const fi = fifaMap[abKey(m.team1, m.team2)]
-                  return fi?.date?.slice(0, 10) === todayUTC || statusMap[fi?.mk] != null
+                  if (!fi?.date) return false
+                  const d = new Date(fi.date)
+                  return d.getFullYear() === now.getFullYear() &&
+                         d.getMonth() === now.getMonth() &&
+                         d.getDate() === now.getDate()
                 })
                 return (
                 <RoundBlock
