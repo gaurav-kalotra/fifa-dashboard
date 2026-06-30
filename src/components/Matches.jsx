@@ -760,12 +760,11 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerR
               )}
             </div>
             <div className="mx-lsp-mid">
+              {!isHT && clock && <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>}
               {kickoffTime && <span className="mx-lsp-kickoff">{kickoffTime}</span>}
               <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
               {liveMatch?.penScore && <span className="mx-pen-score">({liveMatch.penScore[0]}–{liveMatch.penScore[1]}) PEN</span>}
-              {isHT
-                ? <span className="mx-lsp-ht-badge">HALF TIME</span>
-                : <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>}
+              {isHT && <span className="mx-lsp-ht-badge">HALF TIME</span>}
             </div>
             <div className="mx-lsp-team away">
               {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
@@ -990,6 +989,11 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
       {/* ── Row 1: live status bar (top, live games only) ── */}
       {isLive && (
         <>
+          {clockLabel && (
+            <div className="mx-live-clock-row">
+              <span className="mx-live-clock-lbl">{clockLabel}</span>
+            </div>
+          )}
           <div className="mx-live-tag-row">
             <div className="mx-live-green-dot" />
             <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
