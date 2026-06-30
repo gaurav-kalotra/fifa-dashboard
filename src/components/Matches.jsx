@@ -1029,11 +1029,14 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             {localTime && <span className="mx-match-time">{localTime}</span>}
           </>
         ) : isLive && fifaInfo?.liveScore ? (
-          <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
+          <>
+            <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
+            {localTime && <span className="mx-match-time">{localTime}</span>}
+          </>
         ) : (
           <>
-            <span className="mx-vs">vs</span>
             {localTime && <span className="mx-match-time">{localTime}</span>}
+            <span className="mx-vs">vs</span>
           </>
         )}
       </div>

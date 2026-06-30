@@ -1188,9 +1188,9 @@ body.tv-mode {
 .mx-row.played .mx-pen-score { font-size:1.15vh; }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
 .mx-result-lbl {
-  font-family:'Oswald',system-ui,sans-serif; font-size:clamp(8px,.95vh,12px);
+  font-family:'Oswald',system-ui,sans-serif; font-size:clamp(11px,1.4vh,18px);
   font-weight:700; letter-spacing:.18em; text-transform:uppercase;
-  color:rgba(60,172,59,.9); text-shadow:0 0 8px rgba(60,172,59,.4);
+  color:rgba(60,172,59,.95); text-shadow:0 0 10px rgba(60,172,59,.5);
 }
 .mx-ht-score {
   font-family:'Space Mono',monospace; font-size:clamp(7px,.8vh,10px);
@@ -1244,9 +1244,9 @@ body.tv-mode {
   animation:ht-pulse 2s ease-in-out infinite;
 }
 .mx-live-clock-lbl {
-  font-family:'Space Mono',monospace; font-size:clamp(8px,.95vh,12px);
-  color:rgba(251,191,36,.9); letter-spacing:.03em;
-  text-shadow:0 0 8px rgba(251,191,36,.4);
+  font-family:'Space Mono',monospace; font-size:clamp(11px,1.4vh,18px);
+  font-weight:700; color:rgba(251,191,36,.95); letter-spacing:.04em;
+  text-shadow:0 0 10px rgba(251,191,36,.5);
 }
 .mx-live-clock-center {
   font-family:'Space Mono',monospace; font-size:clamp(9px,1.05vh,13px);
@@ -1319,8 +1319,8 @@ body.tv-mode {
 }
 .mx-match-time {
   font-family:'Space Mono',monospace; font-size:clamp(11px,1.15vh,15px);
-  color:#fbbf24; line-height:1;
-  text-shadow:0 0 10px rgba(251,191,36,.5);
+  color:rgba(255,255,255,.45); line-height:1;
+  margin-top:3px;
 }
 .mx-match-venue {
   font-family:'Inter',system-ui,sans-serif; font-size:.9vh;
