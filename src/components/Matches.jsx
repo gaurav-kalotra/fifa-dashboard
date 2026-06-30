@@ -491,8 +491,6 @@ function VPlayer({ player, x, y, isHome }) {
         {photo
           ? <img src={photo} alt="" className="mx-vp-photo" onError={() => setPhotoErr(true)} />
           : <span className="mx-vp-num">{player.jersey}</span>}
-        {/* Jersey number chip overlay when photo is shown */}
-        {photo && <span className="mx-vp-jnum-chip">{player.jersey}</span>}
         {(hasGoal || hasAssist || hasCard) && (
           <div className="mx-vp-events">
             {Array.from({length:player.goals}).map((_,i)=>(
@@ -505,7 +503,10 @@ function VPlayer({ player, x, y, isHome }) {
         )}
         {player.subbedOff && <span className="mx-vp-suboff">↓</span>}
       </div>
-      <div className="mx-vp-name">{name || `#${player.jersey}`}</div>
+      <div className="mx-vp-label">
+        <span className="mx-vp-lnum">#{player.jersey}</span>
+        {name && <span className="mx-vp-lname">{name}</span>}
+      </div>
     </div>
   )
 }
