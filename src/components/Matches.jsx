@@ -987,7 +987,6 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
         <div className="mx-live-bar">
           <div className="mx-live-slider" />
           <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
-          {clockLabel && !isHT && <span className="mx-live-clock-lbl">{clockLabel}</span>}
         </div>
       )}
 
@@ -1019,7 +1018,10 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             {pen && <span className="mx-pen-score">({pen[0]}–{pen[1]}) PEN</span>}
           </>
         ) : isLive && fifaInfo?.liveScore ? (
-          <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
+          <>
+            <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
+            {clockLabel && <span className="mx-live-clock-center">{clockLabel}</span>}
+          </>
         ) : (
           <>
             {localTime && <div className="mx-center-above"><span className="mx-match-time">{localTime}</span></div>}

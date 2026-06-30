@@ -1239,6 +1239,12 @@ body.tv-mode {
   color:rgba(251,191,36,.9); letter-spacing:.03em;
   text-shadow:0 0 8px rgba(251,191,36,.4);
 }
+.mx-live-clock-center {
+  font-family:'Space Mono',monospace; font-size:clamp(9px,1.05vh,13px);
+  font-weight:700; color:rgba(251,191,36,.95); letter-spacing:.04em;
+  text-shadow:0 0 8px rgba(251,191,36,.5);
+  line-height:1; margin-top:1px;
+}
 /* Sliding bar inside live bar */
 .mx-live-slider {
   width:36px; height:2px; border-radius:2px; overflow:hidden;
