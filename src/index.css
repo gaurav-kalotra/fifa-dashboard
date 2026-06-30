@@ -1553,7 +1553,9 @@ body.tv-mode {
 }
 .mx-lsp-clock {
   font-family:'Space Mono',monospace;
-  font-size:clamp(7px,.9vh,11px); color:#fbbf24; line-height:1;
+  font-size:clamp(11px,1.4vh,18px); font-weight:700;
+  color:rgba(251,191,36,.95); letter-spacing:.04em; line-height:1;
+  text-shadow:0 0 10px rgba(251,191,36,.5);
 }
 
 /* Vertical pitch — fills all remaining card space */

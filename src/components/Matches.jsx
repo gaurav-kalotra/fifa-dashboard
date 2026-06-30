@@ -994,11 +994,6 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             <div className="mx-live-green-dot" />
             <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
           </div>
-          {clockLabel && (
-            <div className="mx-live-clock-row">
-              <span className="mx-live-clock-lbl">{clockLabel}</span>
-            </div>
-          )}
           <div className="mx-live-bar">
             <div className="mx-live-slider" />
           </div>
