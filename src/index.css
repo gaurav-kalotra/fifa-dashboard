@@ -1183,7 +1183,8 @@ body.tv-mode {
 }
 .mx-block.current .mx-center { width:108px; }
 .mx-score { font-family:'Space Mono',monospace; font-size:2.4vh; font-weight:700; color:#fff; text-align:center; text-shadow:0 0 20px rgba(125,211,252,0.7), 0 0 40px rgba(125,211,252,0.25); }
-.mx-row.played .mx-score { font-size:3.8vh; font-weight:700; letter-spacing:.04em; }
+.mx-row.played .mx-score,
+.mx-row.live   .mx-score { font-size:3.8vh; font-weight:700; letter-spacing:.04em; }
 .mx-pen-score { font-family:'Space Mono',monospace; font-size:1.0vh; font-weight:600; color:rgba(251,191,36,.85); text-align:center; letter-spacing:.04em; }
 .mx-row.played .mx-pen-score { font-size:1.15vh; }
 .mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
