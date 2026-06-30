@@ -1475,20 +1475,6 @@ export default function Matches({ matches, groups, onLiveChange }) {
               panelSide="left"
             />
             <div className="mx-sp-center">
-              {rounds[activeIdx-1] && (
-                <RoundBlock
-                  key={rounds[activeIdx-1][0]+'_prev'}
-                  roundName={rounds[activeIdx-1][0]}
-                  ms={rounds[activeIdx-1][1]}
-                  highlight={false}
-                  dayOffset={-1}
-                  showDetails={true}
-                  fifaMap={fifaMap}
-                  statusMap={statusMap}
-                  timelines={timelines}
-                  rankings={rankings}
-                />
-              )}
               {rounds[activeIdx] && (
                 <RoundBlock
                   key={rounds[activeIdx][0]}
