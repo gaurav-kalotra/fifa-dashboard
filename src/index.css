@@ -1121,10 +1121,10 @@ body.tv-mode {
 .mx-row {
   flex:0 0 auto;
   display:grid; grid-template-columns:1fr auto 1fr;
-  align-items:center; column-gap:.6vw; row-gap:0; padding:.65vh 1vw;
+  align-items:center; column-gap:.6vw; row-gap:0; padding:.9vh 1vw;
   border-bottom:1px solid rgba(255,255,255,.06);
 }
-.mx-block.current .mx-row { padding:.65vh 1.2vw; }
+.mx-block.current .mx-row { padding:.9vh 1.2vw; }
 .mx-row:last-child { border-bottom:none; }
 .mx-row.live {
   animation:live-row-glow 2.2s ease-in-out infinite;
@@ -1138,8 +1138,8 @@ body.tv-mode {
 .mx-schedule-row.no-live { align-items:stretch; }
 .mx-schedule-row.no-live .mx-block { opacity:1; }
 .mx-schedule-row.no-live .mx-block-matches { display:flex; flex-direction:column; justify-content:space-evenly; }
-.mx-schedule-row.no-live .mx-row { flex:0 0 auto; padding:.65vh 1vw; border-bottom-color:rgba(255,255,255,.03); }
-.mx-schedule-row.no-live .mx-block.current .mx-row { padding:.65vh 1.2vw; }
+.mx-schedule-row.no-live .mx-row { flex:0 0 auto; padding:.9vh 1vw; border-bottom-color:rgba(255,255,255,.03); }
+.mx-schedule-row.no-live .mx-block.current .mx-row { padding:.9vh 1.2vw; }
 
 /* Live-active mode: grid layout forces both cards to identical height */
 .mx-schedule-row.live-active {
@@ -1150,7 +1150,7 @@ body.tv-mode {
 .mx-schedule-row.live-active .mx-sp-center       { display:flex; flex-direction:column; min-height:0; height:auto; }
 .mx-schedule-row.live-active .mx-block           { flex:1; min-height:0; }
 .mx-schedule-row.live-active .mx-block-matches   { display:flex; flex-direction:column; justify-content:space-evenly; }
-.mx-schedule-row.live-active .mx-row             { flex:0 0 auto; padding:.65vh 1.4vw; border-bottom-color:rgba(255,255,255,.04); }
+.mx-schedule-row.live-active .mx-row             { flex:0 0 auto; padding:.9vh 1.4vw; border-bottom-color:rgba(255,255,255,.04); }
 .mx-schedule-row.live-active .mx-row-evt         { font-size:1.15vh; }
 .mx-schedule-row.live-active .mx-rnd-name        { color:#fbbf24; font-size:1.7vh; }
 .mx-schedule-row.live-active .mx-ft-badge        { font-size:1.1vh; }
@@ -1158,6 +1158,9 @@ body.tv-mode {
 .mx-team-cell { display:flex; align-items:center; gap:.4vw; min-width:0; flex:1; }
 .mx-team-cell.left { flex-direction:row; justify-content:flex-start; }
 .mx-team-cell.right { flex-direction:row; justify-content:flex-end; }
+.mx-name-stack { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.mx-name-stack.right { align-items:flex-end; }
+.mx-rank { font-family:'Space Mono',monospace; font-size:clamp(7px,.75vh,10px); color:rgba(255,255,255,.32); letter-spacing:.04em; line-height:1; }
 .mx-row-events { display:flex; flex-direction:column; justify-content:center; gap:1px; min-width:0; }
 .mx-row-events.home { align-items:flex-end; margin-left:auto; margin-right:.7vw; }
 .mx-row-events.away { align-items:flex-start; margin-right:auto; margin-left:.7vw; }
@@ -1211,11 +1214,17 @@ body.tv-mode {
 .mx-pred-pct.away { color:rgba(251,191,36,.9); }
 /* Full-width prediction bar — spans all 3 grid columns */
 .mx-pred-row { grid-column:1/-1; padding:4px 0 2px; }
-/* Full-width live status bar */
+/* LIVE label row — sits above the animated bar */
+.mx-live-tag-row {
+  grid-column:1/-1;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+  padding:4px 0 2px;
+}
+/* Full-width live status bar — just the animated slider line */
 .mx-live-bar {
   grid-column:1/-1;
-  display:flex; align-items:center; justify-content:center; gap:6px;
-  padding:5px 0 4px;
+  display:flex; align-items:center; justify-content:center;
+  padding:0 0 3px;
   border-bottom:1px solid rgba(61,255,160,.12);
 }
 .mx-live-status-lbl {

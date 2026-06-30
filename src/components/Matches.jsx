@@ -984,16 +984,24 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
 
       {/* ── Row 1: live status bar (top, live games only) ── */}
       {isLive && (
-        <div className="mx-live-bar">
-          <div className="mx-live-slider" />
-          <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
-        </div>
+        <>
+          <div className="mx-live-tag-row">
+            <div className="mx-live-green-dot" />
+            <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
+          </div>
+          <div className="mx-live-bar">
+            <div className="mx-live-slider" />
+          </div>
+        </>
       )}
 
       {/* ── Row 2: Home | Score/VS | Away ── */}
       <div className="mx-team-cell left">
         {url1 && <img src={url1} alt={ab(m.team1)} className="mx-flag" onError={e=>{e.target.style.display='none'}} />}
-        <span className={`mx-name${win1?' win':lose1?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team1]||'tbd'}`}>{ab(m.team1)}</span>
+        <div className="mx-name-stack">
+          <span className={`mx-name${win1?' win':lose1?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team1]||'tbd'}`}>{ab(m.team1)}</span>
+          {rankings?.[ab(m.team1)] && <span className="mx-rank">#{rankings[ab(m.team1)]}</span>}
+        </div>
         {homeDisplay.length>0 && (
           <div className="mx-facts-inline home">
             {homeDisplay.map((e,i)=>(
@@ -1017,6 +1025,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
           </>
         ) : isLive && fifaInfo?.liveScore ? (
           <>
+            {localTime && <span className="mx-match-time">{localTime}</span>}
             <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
             {clockLabel && <span className="mx-live-clock-center">{clockLabel}</span>}
           </>
@@ -1040,7 +1049,10 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             ))}
           </div>
         )}
-        <span className={`mx-name${win2?' win':lose2?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team2]||'tbd'}`}>{ab(m.team2)}</span>
+        <div className="mx-name-stack right">
+          <span className={`mx-name${win2?' win':lose2?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team2]||'tbd'}`}>{ab(m.team2)}</span>
+          {rankings?.[ab(m.team2)] && <span className="mx-rank">#{rankings[ab(m.team2)]}</span>}
+        </div>
         {url2 && <img src={url2} alt={ab(m.team2)} className="mx-flag" onError={e=>{e.target.style.display='none'}} />}
       </div>
 
@@ -1050,7 +1062,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
       )}
 
       {/* ── Venue at bottom, two lines ── */}
-      {!isLive && venue && (()=>{
+      {venue && (()=>{
         const {stadium, cityLine} = splitVenue(venue)
         return (
           <div className="mx-venue-row">
