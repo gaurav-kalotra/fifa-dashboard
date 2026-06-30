@@ -730,8 +730,9 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerR
     return pad + (i / (n - 1)) * (100 - 2 * pad)
   }
 
-  const { homeAbbr, awayAbbr, homeScore, awayScore, clock, isHT } = liveMatch
+  const { homeAbbr, awayAbbr, homeScore, awayScore, clock, isHT, date } = liveMatch
   const isFT = clock === 'FT'
+  const kickoffTime = date ? fmtLocalTime(date) : null
   return (
     <div className="mx-live-panel-slot">
       {/* Side-by-side: pitch column (with header) | stats column */}
@@ -759,6 +760,7 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerR
               )}
             </div>
             <div className="mx-lsp-mid">
+              {kickoffTime && <span className="mx-lsp-kickoff">{kickoffTime}</span>}
               <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
               {liveMatch?.penScore && <span className="mx-pen-score">({liveMatch.penScore[0]}–{liveMatch.penScore[1]}) PEN</span>}
               {isHT

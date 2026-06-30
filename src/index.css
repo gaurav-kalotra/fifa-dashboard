@@ -1547,6 +1547,10 @@ body.tv-mode {
   font-size:clamp(18px,3.8vh,52px); font-weight:700; letter-spacing:.04em; color:#fff;
   text-shadow:0 0 20px rgba(125,211,252,0.7), 0 0 40px rgba(125,211,252,0.25);
 }
+.mx-lsp-kickoff {
+  font-family:'Space Mono',monospace; font-size:clamp(11px,1.15vh,15px);
+  color:rgba(255,255,255,.45); line-height:1; margin-bottom:2px;
+}
 .mx-lsp-clock {
   font-family:'Space Mono',monospace;
   font-size:clamp(7px,.9vh,11px); color:#fbbf24; line-height:1;
