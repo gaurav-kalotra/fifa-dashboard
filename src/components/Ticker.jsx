@@ -6,6 +6,7 @@ import PLAYER_NUMBERS, { PLAYER_TEAMS } from '../playerNumbers'
 const ESPN_LEADERS = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/types/1/leaders'
 const ESPN_ATHLETE = id =>
   `https://sports.core.api.espn.com/v2/sports/soccer/leagues/fifa.world/seasons/2026/athletes/${id}?lang=en&region=us`
+const SS_POWER_URL = 'https://api.sofascore.com/api/v1/unique-tournament/16/season/58210/top-players/overall'
 
 const lastNameIdx = {}
 for (const key of Object.keys(playerManifest)) {
@@ -113,7 +114,8 @@ function awardItem(rank, player, ctx, type) {
 }
 
 export default function Ticker({ matches, groups, isTV }) {
-  const [espnScorers, setEspnScorers] = useState([])
+  const [espnScorers,  setEspnScorers]  = useState([])
+  const [powerPlayers, setPowerPlayers] = useState([])
 
   useEffect(() => {
     const load = async () => {
@@ -142,6 +144,25 @@ export default function Ticker({ matches, groups, isTV }) {
     return () => clearInterval(iv)
   }, [])
 
+  useEffect(() => {
+    const loadPower = async () => {
+      try {
+        const d = await fetch(SS_POWER_URL).then(r => r.json())
+        const players = (d.topPlayers || []).slice(0, 15).map(item => ({
+          name: item.player?.name || '',
+          shortName: item.player?.shortName || item.player?.name || '',
+          team: item.player?.team?.name || '',
+          rating: +Number(item.statistics?.rating ?? 0).toFixed(2),
+          id: item.player?.id,
+        })).filter(p => p.name && p.rating > 0)
+        setPowerPlayers(players)
+      } catch {}
+    }
+    loadPower()
+    const iv = setInterval(loadPower, 10 * 60_000)
+    return () => clearInterval(iv)
+  }, [])
+
   const items = useMemo(() => {
     const played = matches.filter(m => m.score?.ft)
     const seed = played.length
@@ -151,6 +172,16 @@ export default function Ticker({ matches, groups, isTV }) {
     const goldenBallBlock  = GOLDEN_BALL.slice(0, cap).map((p, i) => awardItem(i + 1, p, '🏅', 'stat'))
     const goldenGloveBlock = GOLDEN_GLOVE.slice(0, cap).map((p, i) => awardItem(i + 1, p, '🧤', 'stat'))
     const bestYoungBlock   = BEST_YOUNG.slice(0, cap).map((p, i) => awardItem(i + 1, p, '🌟', 'stat'))
+
+    const powerBlock = powerPlayers.slice(0, cap).map((p, i) => ({
+      ctx: '⚡', ctxAward: true,
+      rank: i + 1,
+      text: p.shortName,
+      rating: p.rating,
+      photo: p.id ? `https://api.sofascore.com/api/v1/player/${p.id}/image` : localPhoto(p.name),
+      teams: p.team ? [p.team] : [],
+      type: 'stat',
+    }))
 
     const goldenBootBlock = espnScorers.slice(0, cap).map((s, i) => {
       const natTeam = PLAYER_TEAMS[s.name] || s.team || ''
@@ -194,7 +225,7 @@ export default function Ticker({ matches, groups, isTV }) {
 
     // Award groups in shuffled order, filler interleaved between them
     const awardGroups = shuffle(
-      [goldenBallBlock, goldenBootBlock, goldenGloveBlock, bestYoungBlock].filter(g => g.length),
+      [goldenBallBlock, goldenBootBlock, goldenGloveBlock, bestYoungBlock, powerBlock].filter(g => g.length),
       seed * 1.9
     )
 
@@ -207,7 +238,7 @@ export default function Ticker({ matches, groups, isTV }) {
     })
 
     return result
-  }, [matches, groups, espnScorers])
+  }, [matches, groups, espnScorers, powerPlayers])
 
   if (!items.length) return null
 
@@ -240,6 +271,7 @@ export default function Ticker({ matches, groups, isTV }) {
                   ? <img src="/assets/wc-trophy2.png" alt="" className="ticker-trophy-icon" />
                   : <span className="ticker-item-icon">{item.icon}</span>}
               {item.text}
+              {item.rating != null && <span className="ticker-rating">{item.rating.toFixed(2)}</span>}
               {item.number != null && <span className="ticker-jersey">#{item.number}</span>}
               {item.teams?.map(t => {
                 const f = flagUrl(t)

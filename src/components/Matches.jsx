@@ -64,6 +64,7 @@ const FIFA_LIVE      = (s, m) => `${FIFA_BASE}/live/football/${FIFA_COMP}/${FIFA
 const FIFA_TIMELINE  = (s, m) => `${FIFA_BASE}/timelines/${FIFA_COMP}/${FIFA_SEASON}/${s}/${m}?language=en`
 const FIFA_RANKINGS  = `${FIFA_BASE}/ranking/men?language=en`
 const FIFA_POS_ABBR  = { 0:'GK', 1:'D', 2:'M', 3:'F' }
+const SS_POWER_URL   = 'https://api.sofascore.com/api/v1/unique-tournament/16/season/58210/top-players/overall'
 
 // Hardcoded FIFA Men's Rankings (WC2026 pre-tournament, June 2026)
 // Used immediately so predictions show on load; overwritten if API returns live data
@@ -490,8 +491,9 @@ function rowYsPair(homeN, awayN) {
   }
 }
 
-function VPlayer({ player, x, y, isHome }) {
+function VPlayer({ player, x, y, isHome, powerRatings }) {
   const [photoErr, setPhotoErr] = useState(false)
+  const rating = player.ssId && powerRatings ? (powerRatings[player.ssId] ?? null) : null
   const hasGoal   = player.goals > 0
   const hasAssist = (player.assists || 0) > 0
   const hasCard   = player.yellows > 0 || player.reds > 0
@@ -520,6 +522,7 @@ function VPlayer({ player, x, y, isHome }) {
       <div className="mx-vp-label">
         <span className="mx-vp-lnum">#{player.jersey}</span>
         {name && <span className="mx-vp-lname">{name}</span>}
+        {rating != null && <span className="mx-vp-rating">{rating.toFixed(2)}</span>}
       </div>
     </div>
   )
@@ -703,7 +706,7 @@ function resolveEvtName(e, players) {
   return ''
 }
 
-function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelSide }) {
+function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerRatings, panelSide }) {
   const atHT = liveMatch?.isHT
 
 
@@ -762,7 +765,7 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
                 ? <span className="mx-lsp-ht-badge">HALF TIME</span>
                 : <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>}
             </div>
-            <div className="mx-lsp-team">
+            <div className="mx-lsp-team away">
               {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
                 <div className="mx-lsp-facts away">
                   {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
@@ -802,10 +805,10 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
           <div className="mx-vp-half" />
           <div className="mx-vp-dot" />
           {awayRows.map((row,ri)=>row.map((p,pi)=>(
-            <VPlayer key={`a${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={awayYs[ri]} isHome={false} />
+            <VPlayer key={`a${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={awayYs[ri]} isHome={false} powerRatings={powerRatings} />
           )))}
           {homeRows.map((row,ri)=>row.map((p,pi)=>(
-            <VPlayer key={`h${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={homeYs[ri]} isHome={true} />
+            <VPlayer key={`h${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={homeYs[ri]} isHome={true} powerRatings={powerRatings} />
           )))}
           {!homePlayers.length && !awayPlayers.length && (
             <span className="mx-vp-pending">⏱ Lineup pending</span>
@@ -989,6 +992,11 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             <div className="mx-live-green-dot" />
             <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
           </div>
+          {clockLabel && (
+            <div className="mx-live-clock-row">
+              <span className="mx-live-clock-lbl">{clockLabel}</span>
+            </div>
+          )}
           <div className="mx-live-bar">
             <div className="mx-live-slider" />
           </div>
@@ -998,10 +1006,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
       {/* ── Row 2: Home | Score/VS | Away ── */}
       <div className="mx-team-cell left">
         {url1 && <img src={url1} alt={ab(m.team1)} className="mx-flag" onError={e=>{e.target.style.display='none'}} />}
-        <div className="mx-name-stack">
-          <span className={`mx-name${win1?' win':lose1?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team1]||'tbd'}`}>{ab(m.team1)}</span>
-          {rankings?.[ab(m.team1)] && <span className="mx-rank">#{rankings[ab(m.team1)]}</span>}
-        </div>
+        <span className={`mx-name${win1?' win':lose1?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team1]||'tbd'}`}>{ab(m.team1)}</span>
         {homeDisplay.length>0 && (
           <div className="mx-facts-inline home">
             {homeDisplay.map((e,i)=>(
@@ -1018,21 +1023,17 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
       <div className="mx-center">
         {played ? (
           <>
-            {localTime && <span className="mx-match-time">{localTime}</span>}
             <span className="mx-result-lbl">{resultLabel}</span>
             <span className="mx-score">{ds1}–{ds2}</span>
             {pen && <span className="mx-pen-score">({pen[0]}–{pen[1]}) PEN</span>}
+            {localTime && <span className="mx-match-time">{localTime}</span>}
           </>
         ) : isLive && fifaInfo?.liveScore ? (
-          <>
-            {localTime && <span className="mx-match-time">{localTime}</span>}
-            <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
-            {clockLabel && <span className="mx-live-clock-center">{clockLabel}</span>}
-          </>
+          <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
         ) : (
           <>
-            {localTime && <span className="mx-match-time">{localTime}</span>}
             <span className="mx-vs">vs</span>
+            {localTime && <span className="mx-match-time">{localTime}</span>}
           </>
         )}
       </div>
@@ -1049,10 +1050,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
             ))}
           </div>
         )}
-        <div className="mx-name-stack right">
-          <span className={`mx-name${win2?' win':lose2?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team2]||'tbd'}`}>{ab(m.team2)}</span>
-          {rankings?.[ab(m.team2)] && <span className="mx-rank">#{rankings[ab(m.team2)]}</span>}
-        </div>
+        <span className={`mx-name${win2?' win':lose2?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team2]||'tbd'}`}>{ab(m.team2)}</span>
         {url2 && <img src={url2} alt={ab(m.team2)} className="mx-flag" onError={e=>{e.target.style.display='none'}} />}
       </div>
 
@@ -1152,7 +1150,8 @@ export default function Matches({ matches, groups, onLiveChange }) {
   const [timelines,    setTimelines]    = useState({})
   const [lineups,      setLineups]      = useState({})
   const [statsMap,     setStatsMap]     = useState({})
-  const [rankings,     setRankings]     = useState(RANKINGS_FALLBACK)
+  const [rankings,      setRankings]      = useState(RANKINGS_FALLBACK)
+  const [powerRatings,  setPowerRatings]  = useState({})
   const [currentLiveIdx, setCurrentLiveIdx] = useState(0)
   const [sidePanelMode,  setSidePanelMode]  = useState(false)
   const [sidePanelMks,   setSidePanelMks]   = useState([null, null])
@@ -1201,6 +1200,25 @@ export default function Matches({ matches, groups, onLiveChange }) {
     }
     loadRankings()
     const iv = setInterval(loadRankings, 60 * 60_000)
+    return () => clearInterval(iv)
+  }, [])
+
+  // Fetch SofaScore power ratings (by player SS id → rating)
+  useEffect(() => {
+    const loadPower = async () => {
+      try {
+        const d = await fetch(SS_POWER_URL).then(r => r.json())
+        const map = {}
+        for (const item of d.topPlayers || []) {
+          const id = item.player?.id
+          const rating = item.statistics?.rating
+          if (id && rating) map[id] = +Number(rating).toFixed(2)
+        }
+        if (Object.keys(map).length > 5) setPowerRatings(map)
+      } catch {}
+    }
+    loadPower()
+    const iv = setInterval(loadPower, 10 * 60_000)
     return () => clearInterval(iv)
   }, [])
 
@@ -1629,6 +1647,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
               lineup={panelMatch[0] ? lineups[panelMatch[0].mk] : null}
               sofaPlayers={sofaData[panelMatch[0]?.mk]}
               stats={statsMap[panelMatch[0]?.mk]}
+              powerRatings={powerRatings}
               panelSide="right"
             />
             {panelMatch[1] && (
@@ -1638,6 +1657,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
                 lineup={lineups[panelMatch[1].mk]}
                 sofaPlayers={sofaData[panelMatch[1].mk]}
                 stats={statsMap[panelMatch[1].mk]}
+                powerRatings={powerRatings}
                 panelSide="right"
               />
             )}
