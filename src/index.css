@@ -1187,7 +1187,7 @@ body.tv-mode {
 .mx-row.live   .mx-score { font-size:3.8vh; font-weight:700; letter-spacing:.04em; }
 .mx-pen-score { font-family:'Space Mono',monospace; font-size:1.0vh; font-weight:600; color:rgba(251,191,36,.85); text-align:center; letter-spacing:.04em; }
 .mx-row.played .mx-pen-score { font-size:1.15vh; }
-.mx-score-live { color:#fbbf24; text-shadow:0 0 20px rgba(251,191,36,0.7), 0 0 40px rgba(251,191,36,0.25); }
+.mx-score-live { color:#fff; text-shadow:0 0 20px rgba(125,211,252,0.7), 0 0 40px rgba(125,211,252,0.25); }
 .mx-result-lbl {
   font-family:'Oswald',system-ui,sans-serif; font-size:clamp(11px,1.4vh,18px);
   font-weight:700; letter-spacing:.18em; text-transform:uppercase;
