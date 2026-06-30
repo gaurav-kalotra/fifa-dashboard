@@ -1551,11 +1551,25 @@ body.tv-mode {
   font-family:'Space Mono',monospace; font-size:clamp(11px,1.15vh,15px);
   color:rgba(255,255,255,.45); line-height:1; margin-bottom:2px;
 }
+.mx-lsp-clock-wrap {
+  display:flex; align-items:center; justify-content:center; gap:6px; width:100%;
+}
+.mx-lsp-hbar {
+  flex:1; height:2px; border-radius:2px; overflow:hidden;
+  background:rgba(255,255,255,.08); position:relative; max-width:48px;
+}
+.mx-lsp-hbar::after {
+  content:''; position:absolute; top:0; bottom:0; width:16px;
+  background:linear-gradient(90deg, transparent, #fbbf24 40%, #fff 60%, transparent);
+  animation:lsp-bar-slide 1.8s ease-in-out infinite alternate;
+}
+.mx-lsp-hbar.right::after { animation-direction:alternate-reverse; }
+@keyframes lsp-bar-slide { from{left:-16px} to{left:48px} }
 .mx-lsp-clock {
   font-family:'Space Mono',monospace;
-  font-size:clamp(11px,1.4vh,18px); font-weight:700;
-  color:rgba(251,191,36,.95); letter-spacing:.04em; line-height:1;
-  text-shadow:0 0 10px rgba(251,191,36,.5);
+  font-size:clamp(13px,1.7vh,22px); font-weight:700;
+  color:rgba(251,191,36,.95); letter-spacing:.06em; line-height:1;
+  text-shadow:0 0 12px rgba(251,191,36,.6);
 }
 
 /* Vertical pitch — fills all remaining card space */

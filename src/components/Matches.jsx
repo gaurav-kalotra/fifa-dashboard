@@ -760,7 +760,13 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerR
               )}
             </div>
             <div className="mx-lsp-mid">
-              {!isHT && clock && <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>}
+              {!isHT && clock && (
+                <div className="mx-lsp-clock-wrap">
+                  <div className="mx-lsp-hbar left" />
+                  <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>
+                  <div className="mx-lsp-hbar right" />
+                </div>
+              )}
               {kickoffTime && <span className="mx-lsp-kickoff">{kickoffTime}</span>}
               <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
               {liveMatch?.penScore && <span className="mx-pen-score">({liveMatch.penScore[0]}–{liveMatch.penScore[1]}) PEN</span>}
