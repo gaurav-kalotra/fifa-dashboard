@@ -41,38 +41,48 @@ function localPhoto(rawName) {
 const GOLDEN_BALL = [
   { name: 'Lionel Messi',       team: 'Argentina' },
   { name: 'Kylian Mbappé',      team: 'France'    },
-  { name: 'Erling Haaland',     team: 'Norway'    },
   { name: 'Vinícius Júnior',    team: 'Brazil'    },
   { name: 'Jude Bellingham',    team: 'England'   },
+  { name: 'Erling Haaland',     team: 'Norway'    },
 ]
 
 const GOLDEN_GLOVE = [
   { name: 'Emiliano Martínez',  team: 'Argentina'   },
   { name: 'Alisson Becker',     team: 'Brazil'      },
-  { name: 'Thibaut Courtois',   team: 'Belgium'     },
   { name: 'Mike Maignan',       team: 'France'      },
+  { name: 'Thibaut Courtois',   team: 'Belgium'     },
   { name: 'Yann Sommer',        team: 'Switzerland' },
 ]
 
 const BEST_YOUNG = [
   { name: 'Lamine Yamal',   team: 'Spain'   },
   { name: 'Endrick',        team: 'Brazil'  },
-  { name: 'Florian Wirtz',  team: 'Germany' },
   { name: 'Kobbie Mainoo',  team: 'England' },
   { name: 'Mathys Tel',     team: 'France'  },
+  { name: 'Pedri',          team: 'Spain'   },
 ]
 
 const HISTORY = [
+  // WC2026 tournament facts
+  { icon: '🐐', ctx: 'WC2026',  text: 'Messi scored 6 goals in the group stage — Argentina won all 3 games' },
+  { icon: '🇵🇾', ctx: 'WC2026', text: 'Paraguay eliminated Germany on penalties in the R32 — biggest upset so far' },
+  { icon: '🇲🇦', ctx: 'WC2026', text: 'Morocco eliminated Netherlands on penalties — Africa making waves again' },
+  { icon: '🎯', ctx: 'WC2026',  text: 'Jonathan David scored a hat-trick in Canada\'s historic 6-0 win over Qatar' },
+  { icon: '🔥', ctx: 'WC2026',  text: 'Dembélé hat-trick sent France through — they\'ve conceded just 2 in the group' },
+  { icon: '💥', ctx: 'WC2026',  text: 'Germany 7-1 Curaçao — biggest win of the group stage' },
+  { icon: '⚽', ctx: 'WC2026',  text: 'Brazil through to R16 — Vinícius scored 4 goals in the group stage' },
+  { icon: '🇳🇴', ctx: 'WC2026', text: 'Haaland scored 4 goals as Norway qualified for the last 32' },
+  { icon: '🌟', ctx: 'WC2026',  text: 'Lamine Yamal scored in Spain\'s 4-0 win over Saudi Arabia at just 18 years old' },
+  { icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', ctx: 'WC2026', text: 'Harry Kane scored 4 goals in the group stage as England topped Group L' },
+  // Historical
   { icon: '👑', ctx: 'HISTORY', text: 'Argentina are the defending World Cup champions (Qatar 2022)' },
   { icon: '🏆', ctx: 'TRIVIA',  text: 'FIFA World Cup Trophy is 18-carat gold — 36 cm tall, 6.175 kg' },
   { icon: '🇧🇷', ctx: 'HISTORY', text: 'Brazil hold the record with 5 World Cup titles' },
   { icon: '⚽', ctx: 'HISTORY',  text: 'Germany & Italy have each lifted the trophy 4 times' },
-  { icon: '🐐', ctx: 'HISTORY',  text: 'Messi won the 2022 Golden Ball — defending his crown in 2026' },
   { icon: '🔥', ctx: 'HISTORY',  text: 'France chasing back-to-back titles — last done by Brazil in 1958 & 1962' },
-  { icon: '🌍', ctx: 'HISTORY',  text: 'Morocco made history as the first African semi-finalists (Qatar 2022)' },
-  { icon: '🎯', ctx: 'HISTORY',  text: 'Ronaldo aiming to score in a record 6th consecutive World Cup' },
-  { icon: '🧤', ctx: 'HISTORY',  text: 'Emiliano Martínez won the Golden Glove at Qatar 2022' },
-  { icon: '🌟', ctx: 'HISTORY',  text: 'Lamine Yamal — youngest player ever at a Euros (2024), now at a World Cup' },
+  { icon: '🌍', ctx: 'HISTORY',  text: 'Morocco made history as the first African semi-finalists at Qatar 2022' },
+  { icon: '🎯', ctx: 'HISTORY',  text: 'Ronaldo scored a brace vs Uzbekistan — netting in his 6th consecutive World Cup' },
+  { icon: '🧤', ctx: 'HISTORY',  text: 'Emiliano Martínez won the Golden Glove at Qatar 2022 — back to defend it' },
 ]
 
 function getAthleteId(ref) {

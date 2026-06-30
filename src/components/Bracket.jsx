@@ -9,12 +9,13 @@ const ROUNDS = [
   { key: 'Final', label: 'Final' },
 ]
 
-function TeamSlot({ code, real, score, isWinner, isLoser, isPlayed }) {
+function TeamSlot({ code, real, score, penScore, isWinner, isLoser, isPlayed }) {
   const url = real ? flagUrl(real) : null
   const cls = [
     'bk-team',
     isWinner ? 'bk-winner' : '',
     isLoser  ? 'bk-loser'  : '',
+    !isWinner && !isLoser && real && !isPlayed ? 'bk-pre' : '',
     !real && !isPlayed ? 'bk-tbd' : '',
   ].filter(Boolean).join(' ')
   return (
@@ -23,7 +24,12 @@ function TeamSlot({ code, real, score, isWinner, isLoser, isPlayed }) {
         ? <img src={url} alt={ab(real)} className="bk-flag" onError={e => { e.target.style.display='none' }} />
         : <span className="bk-abbr">{real ? ab(real) : '—'}</span>}
       <span className="bk-name">{real ? ab(real) : code}</span>
-      {score != null && <span className="bk-score">{score}</span>}
+      {score != null && (
+        <span className="bk-score-wrap">
+          <span className="bk-score">{score}</span>
+          {penScore != null && <span className="bk-pen">({penScore}) PEN</span>}
+        </span>
+      )}
     </div>
   )
 }
@@ -32,10 +38,13 @@ function BracketMatch({ match, resolve, liveMatches }) {
   const t1 = resolve(match.team1)
   const t2 = resolve(match.team2)
   const ft = match.score?.ft
-  const [s1, s2] = ft || []
-  const win1 = ft && s1 > s2
-  const win2 = ft && s2 > s1
+  const et = match.score?.et
+  const pen = match.score?.p
+  const display = et || ft
+  const [s1, s2] = display || []
   const isPlayed = !!ft
+  const win1 = isPlayed && (pen ? pen[0] > pen[1] : (s1 ?? 0) > (s2 ?? 0))
+  const win2 = isPlayed && (pen ? pen[1] > pen[0] : (s2 ?? 0) > (s1 ?? 0))
 
   const a1 = t1 ? (ab(t1) || t1.slice(0,3).toUpperCase()) : null
   const a2 = t2 ? (ab(t2) || t2.slice(0,3).toUpperCase()) : null
@@ -46,9 +55,9 @@ function BracketMatch({ match, resolve, liveMatches }) {
 
   return (
     <div className={`bk-match${isPlayed ? ' bk-played' : ''}${isLive ? ' bk-live' : ''}`}>
-      {match.num && <div className="bk-num">Match {match.num}</div>}
-      <TeamSlot code={match.team1} real={t1} score={s1} isWinner={win1} isLoser={isPlayed && !win1} isPlayed={isPlayed} />
-      <TeamSlot code={match.team2} real={t2} score={s2} isWinner={win2} isLoser={isPlayed && !win2} isPlayed={isPlayed} />
+      {match.num && <div className="bk-num">Match {match.num}{pen ? <span className="bk-num-pen"> PEN</span> : et ? <span className="bk-num-pen"> AET</span> : ''}</div>}
+      <TeamSlot code={match.team1} real={t1} score={s1} penScore={pen?.[0] ?? null} isWinner={win1} isLoser={isPlayed && !win1} isPlayed={isPlayed} />
+      <TeamSlot code={match.team2} real={t2} score={s2} penScore={pen?.[1] ?? null} isWinner={win2} isLoser={isPlayed && !win2} isPlayed={isPlayed} />
     </div>
   )
 }

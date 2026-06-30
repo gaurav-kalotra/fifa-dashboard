@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { computeGroups, flagUrl } from './utils'
+import { computeGroups, flagUrl, ab } from './utils'
 import SNAPSHOT from './data/snapshot'
 import Matches from './components/Matches'
 import Games from './components/Games'
@@ -32,11 +32,18 @@ for (const [start, end, team] of FACE_TEAM_RANGES)
   for (let i = start; i <= end; i++)
     if (FACE_ENTRIES[i]) FACE_TEAM_MAP[FACE_ENTRIES[i][0]] = team
 
-function FaceTicker() {
-  const doubled = [...FACE_ENTRIES, ...FACE_ENTRIES]
+function FaceTicker({ todayTeams }) {
+  const entries = (todayTeams?.size)
+    ? (() => {
+        const filtered = FACE_ENTRIES.filter(([name]) => todayTeams.has(FACE_TEAM_MAP[name]))
+        return filtered.length >= 4 ? filtered : FACE_ENTRIES
+      })()
+    : FACE_ENTRIES
+  const dur = Math.max(30, Math.round(entries.length * 22))
+  const doubled = [...entries, ...entries]
   return (
     <div className="face-ticker">
-      <div className="face-ticker-scroll" style={{ animationDuration: `${FACE_DURATION}s` }}>
+      <div className="face-ticker-scroll" style={{ animationDuration: `${dur}s` }}>
         {doubled.map(([name, src], i) => {
           const flag = flagUrl(FACE_TEAM_MAP[name])
           return (
@@ -55,9 +62,10 @@ function FaceTicker() {
 }
 
 const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
+const FIFA_CAL_URL = 'https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&language=en&count=500'
 const TV_TABS = ['matches', 'fixtures']
 
-const isTV = true
+const isTV = new URLSearchParams(window.location.search).has('tv')
 
 // Fewer stars for better Pi performance
 const STARS = Array.from({ length: 18 }, (_, i) => ({
@@ -106,12 +114,60 @@ export default function App() {
       }
     }
     load()
-    const interval = setInterval(load, 60 * 1000)
+    const interval = setInterval(load, 30_000)
     return () => clearInterval(interval)
+  }, [])
+
+  const [liveMatches, setLiveMatches] = useState([])
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const data = await fetch(FIFA_CAL_URL).then(r => r.json())
+        const results = data.Results || []
+        const scoreMap = {}
+        const newLive = []
+        for (const r of results) {
+          const hA = (r.Home?.Abbreviation || r.HomeTeam?.Abbreviation || '').toUpperCase()
+          const aA = (r.Away?.Abbreviation || r.AwayTeam?.Abbreviation || '').toUpperCase()
+          if (!hA || !aA) continue
+          const key = [hA, aA].sort().join('|')
+          const s = r.MatchStatus ?? r.MatchStatusId ?? r.IdMatchStatus ?? r.Status
+          if (s >= 4) {
+            scoreMap[key] = [r.HomeTeamScore ?? r.Home?.Score ?? 0, r.AwayTeamScore ?? r.Away?.Score ?? 0]
+          } else if (s === 3) {
+            newLive.push({ homeAbbr: hA, awayAbbr: aA })
+          }
+        }
+        setLiveMatches(newLive)
+        if (Object.keys(scoreMap).length) {
+          setMatches(prev => prev.map(m => {
+            if (m.score?.ft) return m
+            const a1 = ab(m.team1), a2 = ab(m.team2)
+            if (!a1 || !a2) return m
+            const key = [a1, a2].sort().join('|')
+            const sc = scoreMap[key]
+            return sc ? { ...m, score: { ...m.score, ft: sc } } : m
+          }))
+        }
+      } catch {}
+    }
+    poll()
+    const iv = setInterval(poll, 30_000)
+    return () => clearInterval(iv)
   }, [])
 
   // Compute fixture-page duration based on today's group match pairs
   const groups = useMemo(() => computeGroups(matches), [matches])
+
+  const todayTeams = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const teams = new Set()
+    matches.filter(m => m.date === today).forEach(m => {
+      if (m.team1 && !/^[12][A-L]$|^W\d/.test(m.team1)) teams.add(m.team1)
+      if (m.team2 && !/^[12][A-L]$|^W\d/.test(m.team2)) teams.add(m.team2)
+    })
+    return teams
+  }, [matches])
   useEffect(() => {
     if (!isTV) return
     const today = new Date().toISOString().slice(0, 10)
@@ -173,7 +229,7 @@ export default function App() {
         <div className="tv-orb tv-orb-4" />
         <div className="tv-bloom" />
 
-        <FaceTicker />
+        <FaceTicker todayTeams={todayTeams} />
         <div className="tv-header">
           <div className="tv-header-center">
             <div className="tv-title-row">
@@ -239,7 +295,7 @@ export default function App() {
       <main className="main">
         {tab === 'games' && <Games matches={matches} />}
         {tab === 'standings' && <Standings groups={groups} />}
-        {tab === 'bracket' && <Bracket matches={matches} groups={groups} />}
+        {tab === 'bracket' && <Bracket matches={matches} groups={groups} liveMatches={liveMatches} />}
       </main>
     </div>
   )

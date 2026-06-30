@@ -25,6 +25,25 @@ function Flag({ name, cls = 'sch-flag' }) {
     : null
 }
 
+// ── Compact group strip (qual/elim only, no stats) ────────────
+function GroupStrip({ letter, entries }) {
+  if (!entries?.length) return null
+  return (
+    <div className="gs-strip">
+      <div className="gs-letter">G{letter}</div>
+      {entries.map((e, i) => {
+        const st = teamStatus(entries, i)
+        return (
+          <div key={e.t} className={`gs-team gs-${st}`}>
+            <Flag name={e.t} cls="gs-flag" />
+            <span className="gs-name">{ab(e.t)}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // Derive group letter from a match
 function groupOf(m) { return m?.group?.replace(/^Group\s+/i, '').toUpperCase() || '' }
 
@@ -110,10 +129,13 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isG
   const t1 = resolve(m.team1)
   const t2 = resolve(m.team2)
   const ft = m.score?.ft
-  const [s1, s2] = ft || []
+  const et = m.score?.et
+  const pen = m.score?.p
+  const display = et || ft
+  const [s1, s2] = display || []
   const played = !!ft
-  const win1 = played && s1 > s2
-  const win2 = played && s2 > s1
+  const win1 = played && (pen ? pen[0] > pen[1] : (s1 ?? 0) > (s2 ?? 0))
+  const win2 = played && (pen ? pen[1] > pen[0] : (s2 ?? 0) > (s1 ?? 0))
   const dateStr = fmtDate(m.date)
 
   let cls = 'bk-slot'
@@ -132,18 +154,18 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isG
   return (
     <div className={cls}>
       <div className="bk-snum-row">
-        <span className="bk-snum">M{num}</span>
+        <span className="bk-snum">M{num}{pen ? <span className="bk-snum-pen"> PEN</span> : et ? <span className="bk-snum-pen"> AET</span> : ''}</span>
         {dateStr && <span className="bk-date">{dateStr}</span>}
       </div>
-      <div className={`bk-row${win1 ? ' win' : loser1 ? ' bk-loser' : ''}${jitter1 ? ' bk-jitter-row' : ''}`}>
+      <div className={`bk-row${win1 ? ' win' : loser1 ? ' bk-loser' : !played && t1 ? ' bk-pre' : ''}${jitter1 ? ' bk-jitter-row' : ''}`}>
         <Flag name={t1} cls="bk-flag" />
         <span className="bk-name">{t1 ? ab(t1) : m.team1}</span>
-        {played && <span className="bk-s">{s1}</span>}
+        {played && <span className="bk-s">{s1}{pen ? <span className="bk-pen-s">({pen[0]})</span> : null}</span>}
       </div>
-      <div className={`bk-row${win2 ? ' win' : loser2 ? ' bk-loser' : ''}${jitter2 ? ' bk-jitter-row' : ''}`}>
+      <div className={`bk-row${win2 ? ' win' : loser2 ? ' bk-loser' : !played && t2 ? ' bk-pre' : ''}${jitter2 ? ' bk-jitter-row' : ''}`}>
         <Flag name={t2} cls="bk-flag" />
         <span className="bk-name">{t2 ? ab(t2) : m.team2}</span>
-        {played && <span className="bk-s">{s2}</span>}
+        {played && <span className="bk-s">{s2}{pen ? <span className="bk-pen-s">({pen[1]})</span> : null}</span>}
       </div>
     </div>
   )
@@ -232,10 +254,13 @@ function FinalCard({ byNum, resolve }) {
   const t1 = resolve(m.team1)
   const t2 = resolve(m.team2)
   const ft = m.score?.ft
-  const [s1, s2] = ft || []
+  const et = m.score?.et
+  const pen = m.score?.p
+  const display = et || ft
+  const [s1, s2] = display || []
   const played = !!ft
-  const win1 = played && s1 > s2
-  const win2 = played && s2 > s1
+  const win1 = played && (pen ? pen[0] > pen[1] : (s1 ?? 0) > (s2 ?? 0))
+  const win2 = played && (pen ? pen[1] > pen[0] : (s2 ?? 0) > (s1 ?? 0))
 
   return (
     <div className="bk-final-slot">
@@ -244,13 +269,13 @@ function FinalCard({ byNum, resolve }) {
       <div className={`bk-final-row${win1 ? ' win' : ''}`}>
         <Flag name={t1} cls="bk-flag-lg" />
         <span>{t1 ? ab(t1) : (m.team1 || '?')}</span>
-        {played && <span className="bk-final-s">{s1}</span>}
+        {played && <span className="bk-final-s">{s1}{pen ? <span className="bk-pen-s">({pen[0]})</span> : null}</span>}
       </div>
       <div className="bk-final-vs">{played ? '—' : 'vs'}</div>
       <div className={`bk-final-row${win2 ? ' win' : ''}`}>
         <Flag name={t2} cls="bk-flag-lg" />
         <span>{t2 ? ab(t2) : (m.team2 || '?')}</span>
-        {played && <span className="bk-final-s">{s2}</span>}
+        {played && <span className="bk-final-s">{s2}{pen ? <span className="bk-pen-s">({pen[1]})</span> : null}</span>}
       </div>
     </div>
   )
@@ -361,7 +386,12 @@ export default function Schedule({ groups, matches }) {
 
   return (
     <div className="sch-layout">
-      {/* Bracket tree — full width, no group panels */}
+      {/* Left group strips: A–F */}
+      <div className="gs-panel">
+        {LEFT_GROUPS.map(g => <GroupStrip key={g} letter={g} entries={groups[g] || []} />)}
+      </div>
+
+      {/* Bracket tree */}
       <div className="sch-bracket">
         <div className="sch-bracket-labels">
           {ROUND_DATES.map(({ round, date }) => (
@@ -390,6 +420,11 @@ export default function Schedule({ groups, matches }) {
             todayNums={todayNums} potentialNums={potentialNums}
             greenSlots={gs} redSlots={rs} elimSlots={es} />
         </div>
+      </div>
+
+      {/* Right group strips: G–L */}
+      <div className="gs-panel">
+        {RIGHT_GROUPS.map(g => <GroupStrip key={g} letter={g} entries={groups[g] || []} />)}
       </div>
     </div>
   )

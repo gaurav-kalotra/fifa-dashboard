@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { ab, flagUrl, buildTeamStatusMap, computeGroups } from '../utils'
+import { ab, flagUrl, buildTeamStatusMap, computeGroups, buildResolver } from '../utils'
 import { MOCK_LIVE_MATCHES, MOCK_TIMELINES, MOCK_LINEUPS, MOCK_SOFA_DATA, MOCK_FIFA_MAP } from '../data/mockLive'
 
 const DEMO = new URLSearchParams(window.location.search).has('demo')
@@ -64,6 +64,18 @@ const FIFA_LIVE      = (s, m) => `${FIFA_BASE}/live/football/${FIFA_COMP}/${FIFA
 const FIFA_TIMELINE  = (s, m) => `${FIFA_BASE}/timelines/${FIFA_COMP}/${FIFA_SEASON}/${s}/${m}?language=en`
 const FIFA_RANKINGS  = `${FIFA_BASE}/ranking/men?language=en`
 const FIFA_POS_ABBR  = { 0:'GK', 1:'D', 2:'M', 3:'F' }
+
+// Hardcoded FIFA Men's Rankings (WC2026 pre-tournament, June 2026)
+// Used immediately so predictions show on load; overwritten if API returns live data
+const RANKINGS_FALLBACK = {
+  ARG:1,  FRA:2,  ENG:3,  BRA:4,  POR:5,  BEL:6,  NED:7,  ESP:8,
+  COL:10, URU:11, DEN:12, MAR:13, USA:14, GER:15, CRO:16, SUI:17,
+  MEX:18, SEN:20, JPN:22, AUT:25, KOR:26, AUS:24, NOR:33, SWE:27,
+  TUR:29, CAN:44, ECU:41, PAR:58, KSA:55, CIV:51, GHA:54, EGY:34,
+  ALG:37, UZB:77, COD:49, PAN:71, CPV:87, IRN:22, BIH:61, QAT:43,
+  HAI:88, TUN:29, IRQ:68, NZL:95, SCO:35, JOR:89, CZE:38, CUW:98,
+  RSA:64, SUI:17,
+}
 
 // ── ESPN (backup) ─────────────────────────────────────────────
 const ESPN_BOARD = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard'
@@ -487,21 +499,23 @@ function VPlayer({ player, x, y, isHome }) {
   const name  = jerseyName(player.name)
   return (
     <div className="mx-vp" style={{left:`${x}%`,top:`${y}%`}}>
-      <div className={`mx-vp-badge ${isHome ? 'home' : 'away'}`}>
-        {photo
-          ? <img src={photo} alt="" className="mx-vp-photo" onError={() => setPhotoErr(true)} />
-          : <span className="mx-vp-num">{player.jersey}</span>}
+      <div className="mx-vp-badge-wrap">
+        <div className={`mx-vp-badge ${isHome ? 'home' : 'away'}`}>
+          {photo
+            ? <img src={photo} alt="" className="mx-vp-photo" onError={() => setPhotoErr(true)} />
+            : <span className="mx-vp-num">{player.jersey}</span>}
+          {player.subbedOff && <span className="mx-vp-suboff">↓</span>}
+        </div>
         {(hasGoal || hasAssist || hasCard) && (
           <div className="mx-vp-events">
             {Array.from({length:player.goals}).map((_,i)=>(
               <span key={i} className="mx-vp-evt-ball">⚽</span>
             ))}
             {hasAssist && <span className="mx-vp-evt-ball">🥾</span>}
-            {player.yellows>0 && <span className="mx-pp-evt-card yellow" />}
-            {player.reds>0    && <span className="mx-pp-evt-card red" />}
+            {player.yellows>0 && <span className="mx-vp-evt-ball">🟨</span>}
+            {player.reds>0    && <span className="mx-vp-evt-ball">🟥</span>}
           </div>
         )}
-        {player.subbedOff && <span className="mx-vp-suboff">↓</span>}
       </div>
       <div className="mx-vp-label">
         <span className="mx-vp-lnum">#{player.jersey}</span>
@@ -534,6 +548,7 @@ function BenchSubRow({ player, side }) {
           ? <img src={photo} alt="" className="mx-bsr-img" onError={() => setPhotoErr(true)} />
           : <span className="mx-bsr-jnum">{player.jersey}</span>}
       </div>
+      <span className="mx-bsr-jn2">{player.jersey}</span>
       <span className="mx-bsr-nm">{name || `#${player.jersey}`}</span>
       <span className="mx-bsr-pos">{player.pos}</span>
     </div>
@@ -619,7 +634,10 @@ function StatsPanel({ stats, homeAbbr, awayAbbr }) {
 
 // ── Roster (separate from pitch) ──────────────────────────────
 const jerseyName = n => (n || '').trim().split(/\s+/).slice(-1)[0] || n || ''
-const evtLabel = e => e.player ? `${jerseyName(e.player)}${e.jersey ? ` (#${e.jersey})` : ''}` : ''
+const evtLabel = e => {
+  const nm = e.player || e.name || ''
+  return nm ? jerseyName(nm) : (e.jersey ? `#${e.jersey}` : '')
+}
 
 function RosterRow({ player }) {
   const [photoErr, setPhotoErr] = useState(false)
@@ -667,29 +685,27 @@ function RosterList({ home, away, homeAbbr, awayAbbr }) {
   )
 }
 
-function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelSide }) {
-  const [tab, setTab] = useState('lineup')
-  const tabTimerRef = useRef(null)
+function resolveEvtName(e, players) {
+  const raw = e.player || e.name || ''
+  if (raw) return jerseyName(raw)
+  if (e.jersey) {
+    const byJersey = players.find(p => String(p.jersey) === String(e.jersey))
+    if (byJersey?.name) return jerseyName(byJersey.name)
+  }
+  if (e.player) {
+    const ew = e.player.split(/\s+/).map(normName).filter(w => w.length > 2)
+    const hit = players.find(p => {
+      const pw = (p.name||'').split(/\s+/).map(normName).filter(w => w.length > 2)
+      return ew.some(w => pw.includes(w))
+    })
+    if (hit?.name) return jerseyName(hit.name)
+  }
+  return ''
+}
 
+function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelSide }) {
   const atHT = liveMatch?.isHT
 
-  // Auto-switch stats tab back to lineup after 5s unless it's HT
-  const switchToStats = () => {
-    setTab('stats')
-    if (!atHT) {
-      clearTimeout(tabTimerRef.current)
-      tabTimerRef.current = setTimeout(() => setTab('lineup'), 5000)
-    }
-  }
-
-  // When HT ends, return to lineup
-  useEffect(() => {
-    if (!atHT && tab === 'stats') {
-      clearTimeout(tabTimerRef.current)
-      tabTimerRef.current = setTimeout(() => setTab('lineup'), 5000)
-    }
-    return () => clearTimeout(tabTimerRef.current)
-  }, [atHT])
 
   if (!liveMatch) return <div className="mx-live-panel-slot mx-lsp-empty" />
 
@@ -698,6 +714,8 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
   const subEvts  = timeline.filter(e=>e.type==='sub')
   const homePlayers = mergeWithSofa(annotatePlayerEvents(lineup?.home||[], homeEvts), sofaPlayers?.home)
   const awayPlayers = mergeWithSofa(annotatePlayerEvents(lineup?.away||[], awayEvts), sofaPlayers?.away)
+  const homeBench = mergeWithSofa(lineup?.homeBench||[], sofaPlayers?.home)
+  const awayBench = mergeWithSofa(lineup?.awayBench||[], sofaPlayers?.away)
 
   const homeRows = assignToRows(homePlayers, lineup?.homeFormation)
   const awayRows = assignToRows(awayPlayers, lineup?.awayFormation)
@@ -713,109 +731,114 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
   const isFT = clock === 'FT'
   return (
     <div className="mx-live-panel-slot">
-      <div className="mx-lsp-hdr">
-        <div className="mx-lsp-team">
-          <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
-          <span className="mx-lsp-abbr">{homeAbbr}</span>
-        </div>
-        <div className="mx-lsp-mid">
-          <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
-          <span className={`mx-lsp-clock${isFT?' ft':''}`}>{isHT?'HT':clock}</span>
-        </div>
-        <div className="mx-lsp-team">
-          <span className="mx-lsp-abbr">{awayAbbr}</span>
-          <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
-        </div>
-      </div>
+      {/* Side-by-side: pitch column (with header) | stats column */}
+      <div className="mx-lsp-body">
 
-      {/* Match facts */}
-      <div className="mx-facts-row">
-        <div className="mx-facts-col home">
-          {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
-            const nm = e.player || homePlayers.find(p=>String(p.jersey)===String(e.jersey))?.name || ''
-            return (
-              <span key={i} className="mx-fact">
-                {e.min && <span className="mx-fact-min">{e.min}'</span>}
-                <EventIcon type={e.type} />
-                {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
-                {nm && <span className="mx-fact-nm">{jerseyName(nm)}</span>}
-              </span>
-            )
-          })}
-        </div>
-        <div className="mx-facts-col away">
-          {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
-            const nm = e.player || awayPlayers.find(p=>String(p.jersey)===String(e.jersey))?.name || ''
-            return (
-              <span key={i} className="mx-fact">
-                {nm && <span className="mx-fact-nm">{jerseyName(nm)}</span>}
-                {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
-                <EventIcon type={e.type} />
-                {e.min && <span className="mx-fact-min">{e.min}'</span>}
-              </span>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Tab switcher */}
-      <div className="mx-lsp-tabs">
-        <button className={`mx-lsp-tab${tab==='lineup'?' active':''}`} onClick={()=>{clearTimeout(tabTimerRef.current);setTab('lineup')}}>Lineup</button>
-        <button className={`mx-lsp-tab${tab==='stats'?' active':''}`} onClick={switchToStats}>Stats</button>
-      </div>
-
-      {tab === 'stats' ? (
-        <div className="mx-stats-tab">
-          <StatsPanel stats={stats} homeAbbr={homeAbbr} awayAbbr={awayAbbr} />
-          {(lineup?.homeBench?.length || lineup?.awayBench?.length) ? (
-            <>
-            <div className="mx-bench-label">SUBSTITUTES</div>
-            <div className="mx-bench-row">
-              <div className="mx-bench-half home">
-                <div className="mx-bench-rhdr">{homeAbbr}</div>
-                {(lineup.homeBench||[]).slice(0,9).map((p,i)=>(
-                  <BenchSubRow key={p.id||`h${i}`} player={p} side="home" />
-                ))}
-              </div>
-              <div className="mx-bench-half away">
-                <div className="mx-bench-rhdr">{awayAbbr}</div>
-                {(lineup.awayBench||[]).slice(0,9).map((p,i)=>(
-                  <BenchSubRow key={p.id||`a${i}`} player={p} side="away" />
-                ))}
-              </div>
+        {/* Left: header + facts + pitch stacked */}
+        <div className="mx-lsp-pitch-col">
+          <div className="mx-lsp-hdr">
+            <div className="mx-lsp-team">
+              <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
+              <span className="mx-lsp-abbr">{homeAbbr}</span>
+              {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
+                <div className="mx-lsp-facts home">
+                  {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
+                    const nm = resolveEvtName(e, homePlayers)
+                    return (
+                      <span key={i} className="mx-fact-line">
+                        <EventIcon type={e.type} />
+                        {e.min && <span className="mx-fact-min">{e.min}'</span>}
+                        {nm && <span className="mx-fact-nm">{nm}</span>}
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
             </div>
-            </>
-          ) : null}
-        </div>
-      ) : (
-        <div className="mx-lsp-body">
+            <div className="mx-lsp-mid">
+              <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
+              {liveMatch?.penScore && <span className="mx-pen-score">({liveMatch.penScore[0]}–{liveMatch.penScore[1]}) PEN</span>}
+              {isHT
+                ? <span className="mx-lsp-ht-badge">HALF TIME</span>
+                : <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>}
+            </div>
+            <div className="mx-lsp-team">
+              {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
+                <div className="mx-lsp-facts away">
+                  {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
+                    const nm = resolveEvtName(e, awayPlayers)
+                    return (
+                      <span key={i} className="mx-fact-line">
+                        {nm && <span className="mx-fact-nm">{nm}</span>}
+                        {e.min && <span className="mx-fact-min">{e.min}'</span>}
+                        <EventIcon type={e.type} />
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+              <span className="mx-lsp-abbr">{awayAbbr}</span>
+              <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
+            </div>
+          </div>
+
           <div className="mx-vpitch">
-            <div className="mx-vp-tlabel" style={{top:'2%',left:'50%',transform:'translateX(-50%)'}}>
+          <div className="mx-vp-corner-label" style={{top:'1%',left:'1%'}}>
+            <div className="mx-vp-tlabel">
               <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag sm" onError={e=>{e.target.style.display='none'}} />
               <span>{awayAbbr}</span>
               {lineup?.awayFormation && <span className="mx-vp-fmtn">{lineup.awayFormation}</span>}
             </div>
-            <div className="mx-vp-tlabel" style={{bottom:'2%',left:'50%',transform:'translateX(-50%)'}}>
+            {lineup?.awayCoach && <div className="mx-vp-coach-tag">🧥 {lineup.awayCoach.trim().split(/\s+/).slice(-1)[0]}</div>}
+          </div>
+          <div className="mx-vp-corner-label" style={{bottom:'1%',left:'1%'}}>
+            <div className="mx-vp-tlabel">
               <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag sm" onError={e=>{e.target.style.display='none'}} />
               <span>{homeAbbr}</span>
               {lineup?.homeFormation && <span className="mx-vp-fmtn">{lineup.homeFormation}</span>}
             </div>
-            {lineup?.awayCoach && <VCoach name={lineup.awayCoach} y={2} />}
-            {lineup?.homeCoach && <VCoach name={lineup.homeCoach} y={98} />}
-            <div className="mx-vp-half" />
-            <div className="mx-vp-dot" />
-            {awayRows.map((row,ri)=>row.map((p,pi)=>(
-              <VPlayer key={`a${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={awayYs[ri]} isHome={false} />
-            )))}
-            {homeRows.map((row,ri)=>row.map((p,pi)=>(
-              <VPlayer key={`h${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={homeYs[ri]} isHome={true} />
-            )))}
-            {!homePlayers.length && !awayPlayers.length && (
-              <span className="mx-vp-pending">⏱ Lineup pending</span>
-            )}
+            {lineup?.homeCoach && <div className="mx-vp-coach-tag">🧥 {lineup.homeCoach.trim().split(/\s+/).slice(-1)[0]}</div>}
           </div>
+          <div className="mx-vp-half" />
+          <div className="mx-vp-dot" />
+          {awayRows.map((row,ri)=>row.map((p,pi)=>(
+            <VPlayer key={`a${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={awayYs[ri]} isHome={false} />
+          )))}
+          {homeRows.map((row,ri)=>row.map((p,pi)=>(
+            <VPlayer key={`h${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={homeYs[ri]} isHome={true} />
+          )))}
+          {!homePlayers.length && !awayPlayers.length && (
+            <span className="mx-vp-pending">⏱ Lineup pending</span>
+          )}
+          </div>{/* end mx-vpitch */}
+        </div>{/* end mx-lsp-pitch-col */}
+
+        {/* Stats panel alongside pitch */}
+        <div className="mx-lsp-stats-side">
+          <div className="mx-lsp-stats-hdr">MATCH STATS</div>
+          <StatsPanel stats={stats} homeAbbr={homeAbbr} awayAbbr={awayAbbr} />
+          {(homeBench.length || awayBench.length) && (
+            <>
+              <div className="mx-lsp-stats-hdr" style={{borderTop:'1px solid rgba(255,255,255,.08)'}}>SUBSTITUTES</div>
+              <div className="mx-bench-row">
+                <div className="mx-bench-half home">
+                  <div className="mx-bench-rhdr">{homeAbbr}</div>
+                  {homeBench.slice(0,7).map((p,i)=>(
+                    <BenchSubRow key={p.id||`h${i}`} player={p} side="home" />
+                  ))}
+                </div>
+                <div className="mx-bench-half away">
+                  <div className="mx-bench-rhdr">{awayAbbr}</div>
+                  {awayBench.slice(0,7).map((p,i)=>(
+                    <BenchSubRow key={p.id||`a${i}`} player={p} side="away" />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
+
+      </div>{/* end mx-lsp-body */}
     </div>
   )
 }
@@ -900,106 +923,143 @@ function LiveMatchTile({ event, timeline, lineup }) {
 // dayOffset: -1=prev, 0=current, 1=future
 function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, rankings }) {
   const ft  = m.score?.ft
+  const et  = m.score?.et
+  const pen = m.score?.p || fifaInfo?.penScore || null
   const state = fifaInfo?.state
-  const displayScore = ft || (state==='post' ? fifaInfo?.postScore : null)
+  const displayScore = et || ft || (state==='post' ? fifaInfo?.postScore : null)
   const [ds1,ds2] = displayScore || []
   const played = !!displayScore
   const isLive = !played && state==='in'
 
-  const win1 = played && ds1>ds2, win2 = played && ds2>ds1
+  const win1 = played && (pen ? pen[0]>pen[1] : ds1>ds2)
+  const win2 = played && (pen ? pen[1]>pen[0] : ds2>ds1)
+  const lose1 = played && win2
+  const lose2 = played && win1
   const url1 = flagUrl(m.team1), url2 = flagUrl(m.team2)
   const localTime = fifaInfo?.date ? fmtLocalTime(fifaInfo.date) : null
   const venue = fifaInfo?.venue || null
   const mk = fifaInfo?.mk
-  const timeline = showDetails && (played||isLive) ? (timelines?.[mk]||[]) : []
-  const homeEvts = timeline.filter(e=>e.side==='home' && e.type!=='sub')
-  const awayEvts = timeline.filter(e=>e.side==='away' && e.type!=='sub')
-  // Events without side info (ESPN fallback) — split half/half
-  const noSideEvts = timeline.filter(e=>!e.side && e.type!=='sub')
-  const homeDisplay = homeEvts.length>0 ? homeEvts : noSideEvts.slice(0, Math.ceil(noSideEvts.length/2))
-  const awayDisplay = awayEvts.length>0 ? awayEvts : noSideEvts.slice(Math.ceil(noSideEvts.length/2))
 
-  // Prediction (future card, upcoming)
-  const pred = (!played && !isLive && dayOffset===1 && rankings)
+  // All notable events (goals + cards) for each side
+  const isFactEvt = e => ['goal','owngoal','yellow','red'].includes(e.type)
+  const timeline = showDetails && (played||isLive) ? (timelines?.[mk]||[]) : []
+  const homeEvts = timeline.filter(e=>e.side==='home' && isFactEvt(e))
+  const awayEvts = timeline.filter(e=>e.side==='away' && isFactEvt(e))
+  const noSideGoals = timeline.filter(e=>!e.side && (e.type==='goal'||e.type==='owngoal'))
+
+  const toGoalEvt = (g, side) => ({ side, type: g.owngoal ? 'owngoal' : 'goal', name: g.name, min: g.minute })
+  const opfbHome = played ? (m.goals1||[]).map(g=>toGoalEvt(g,'home')) : []
+  const opfbAway = played ? (m.goals2||[]).map(g=>toGoalEvt(g,'away')) : []
+
+  const homeDisplay = isLive
+    ? (homeEvts.length>0 ? homeEvts : noSideGoals.slice(0, Math.ceil(noSideGoals.length/2)))
+    : opfbHome.length>0 ? opfbHome
+    : homeEvts.length>0 ? homeEvts
+    : noSideGoals.slice(0, Math.ceil(noSideGoals.length/2))
+  const awayDisplay = isLive
+    ? (awayEvts.length>0 ? awayEvts : noSideGoals.slice(Math.ceil(noSideGoals.length/2)))
+    : opfbAway.length>0 ? opfbAway
+    : awayEvts.length>0 ? awayEvts
+    : noSideGoals.slice(Math.ceil(noSideGoals.length/2))
+
+  const hasEvts = homeDisplay.length>0 || awayDisplay.length>0
+
+  // Match result label
+  const resultLabel = pen ? 'PEN' : et ? 'AET' : played ? 'FT' : null
+
+  // Prediction for upcoming games
+  const pred = (!played && !isLive && dayOffset >= 0 && rankings)
     ? predictMatch(rankings[ab(m.team1)], rankings[ab(m.team2)])
     : null
 
-  // Half-time detection
+  // Half-time / extra-time detection
   const isHT = isLive && (fifaInfo?.isHT || String(fifaInfo?.clock||'').trim().toUpperCase() === 'HT')
+  const isET = isLive && !isHT && /^\d{9,}|^(?:1[0-9]{2}|9\d)/.test(String(fifaInfo?.clock||''))
   const clockRaw = fifaInfo?.clock || ''
-  const clockLabel = !isLive ? null
-    : isHT ? (clockRaw && clockRaw.toUpperCase() !== 'HT' ? `${clockRaw} HT` : 'HT')
-    : clockRaw || null
+  const clockLabel = !isLive ? null : isHT ? 'HT' : clockRaw || null
+  const statusLabel = isHT ? 'HALF TIME' : isET ? 'EXTRA TIME' : isLive ? 'LIVE' : null
 
   return (
     <div className={`mx-row${played?' played':''}${isLive?' live':''}`}>
-      {/* Home team cell */}
+
+      {/* ── Row 1: live status bar (top, live games only) ── */}
+      {isLive && (
+        <div className="mx-live-bar">
+          <div className="mx-live-slider" />
+          <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
+          {clockLabel && !isHT && <span className="mx-live-clock-lbl">{clockLabel}</span>}
+        </div>
+      )}
+
+      {/* ── Row 2: Home | Score/VS | Away ── */}
       <div className="mx-team-cell left">
         {url1 && <img src={url1} alt={ab(m.team1)} className="mx-flag" onError={e=>{e.target.style.display='none'}} />}
-        <span className={`mx-name${win1?' win':''} st-${statusMap?.[m.team1]||'tbd'}`}>{ab(m.team1)}</span>
+        <span className={`mx-name${win1?' win':lose1?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team1]||'tbd'}`}>{ab(m.team1)}</span>
         {homeDisplay.length>0 && (
-          <div className="mx-row-events home">
+          <div className="mx-facts-inline home">
             {homeDisplay.map((e,i)=>(
-              <span key={i} className="mx-row-evt">
-                {evtLabel(e)&&<>{evtLabel(e)} </>}<EventIcon type={e.type}/>{e.min&&<> {e.min}'</>}
+              <span key={i} className="mx-fact-line">
+                <EventIcon type={e.type} />
+                {e.min && <span className="mx-fact-min">{e.min}'</span>}
+                {evtLabel(e) && <span className="mx-fact-nm">{evtLabel(e)}</span>}
               </span>
             ))}
           </div>
         )}
       </div>
 
-      {/* Center column — 3-row grid keeps score/vs pinned to true center */}
-      <div className={`mx-center${pred?' has-pred':''}`}>
-        {/* Top row: everything above score/vs */}
-        <div className="mx-cen-top">
-          {isLive && <div className="mx-live-slider" />}
-          {isLive && (
-            <span className="mx-live-label">
-              <span className="mx-live-green-dot" />LIVE
-            </span>
-          )}
-          {isLive && clockLabel && <span className={`mx-live-match-clock${isHT?' ht':''}`}>{clockLabel}</span>}
-          {played && dayOffset===0 && <span className="mx-ft-badge above">FT</span>}
-          {!isLive && !played && m.group && dayOffset === 0 && <span className="mx-match-group">{m.group}</span>}
-          {!isLive && !played && localTime && <span className="mx-match-time">{localTime}</span>}
-          {pred && <PredictionBar {...pred} />}
-        </div>
-
-        {/* Middle row: score/vs — pinned to true vertical center */}
-        {played
-          ? <span className="mx-score">{ds1}–{ds2}</span>
-          : isLive && fifaInfo?.liveScore
-            ? <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
-            : <span className="mx-vs">vs</span>}
-
-        {/* Bottom row: venue */}
-        <div className="mx-cen-bot">
-          {!isLive && venue && (() => {
-            const { stadium, cityLine } = splitVenue(venue)
-            return (
-              <div className="mx-match-detail">
-                {stadium && <span className="mx-match-venue">{stadium}</span>}
-                {cityLine && <span className="mx-match-venue-city">{cityLine}</span>}
-              </div>
-            )
-          })()}
-        </div>
+      <div className="mx-center">
+        {played ? (
+          <>
+            <div className="mx-center-above">
+              {localTime && <span className="mx-match-time">{localTime}</span>}
+              <span className="mx-result-lbl">{resultLabel}</span>
+            </div>
+            <span className="mx-score">{ds1}–{ds2}</span>
+            {pen && <span className="mx-pen-score">({pen[0]}–{pen[1]}) PEN</span>}
+          </>
+        ) : isLive && fifaInfo?.liveScore ? (
+          <span className="mx-score mx-score-live">{fifaInfo.liveScore[0]}–{fifaInfo.liveScore[1]}</span>
+        ) : (
+          <>
+            {localTime && <div className="mx-center-above"><span className="mx-match-time">{localTime}</span></div>}
+            <span className="mx-vs">vs</span>
+          </>
+        )}
       </div>
 
-      {/* Away team cell */}
       <div className="mx-team-cell right">
         {awayDisplay.length>0 && (
-          <div className="mx-row-events away">
+          <div className="mx-facts-inline away">
             {awayDisplay.map((e,i)=>(
-              <span key={i} className="mx-row-evt">
-                {e.min&&<>{e.min}' </>}<EventIcon type={e.type}/>{evtLabel(e)&&<> {evtLabel(e)}</>}
+              <span key={i} className="mx-fact-line">
+                {evtLabel(e) && <span className="mx-fact-nm">{evtLabel(e)}</span>}
+                {e.min && <span className="mx-fact-min">{e.min}'</span>}
+                <EventIcon type={e.type} />
               </span>
             ))}
           </div>
         )}
-        <span className={`mx-name${win2?' win':''} st-${statusMap?.[m.team2]||'tbd'}`}>{ab(m.team2)}</span>
+        <span className={`mx-name${win2?' win':lose2?' lose':!played&&!isLive?' pre':''} st-${statusMap?.[m.team2]||'tbd'}`}>{ab(m.team2)}</span>
         {url2 && <img src={url2} alt={ab(m.team2)} className="mx-flag" onError={e=>{e.target.style.display='none'}} />}
       </div>
+
+      {/* ── Pred bar above venue ── */}
+      {pred && (
+        <div className="mx-pred-row"><PredictionBar {...pred} /></div>
+      )}
+
+      {/* ── Venue at bottom, two lines ── */}
+      {!isLive && venue && (()=>{
+        const {stadium, cityLine} = splitVenue(venue)
+        return (
+          <div className="mx-venue-row">
+            {stadium && <span className="mx-venue-line">{stadium}</span>}
+            {cityLine && <span className="mx-venue-city">{cityLine}</span>}
+          </div>
+        )
+      })()}
+
     </div>
   )
 }
@@ -1011,18 +1071,24 @@ function ordinal(n) {
 }
 
 // ── Matchday block ────────────────────────────────────────────
-function RoundBlock({ roundName, ms, highlight, dayOffset, showDetails, fifaMap, statusMap, timelines, rankings }) {
+function RoundBlock({ roundName, ms, highlight, dayOffset, showDetails, fifaMap, statusMap, timelines, rankings, resolveTeam }) {
+  const getFifaInfo = (m) => {
+    const direct = fifaMap?.[abKey(m.team1, m.team2)]
+    if (direct || !resolveTeam) return direct || null
+    const r1 = resolveTeam(m.team1), r2 = resolveTeam(m.team2)
+    return (r1 && r2) ? fifaMap?.[abKey(r1, r2)] : null
+  }
   const sorted = useMemo(()=>
     [...ms].sort((a,b)=>{
-      const ta = fifaMap?.[abKey(a.team1,a.team2)]?.date||''
-      const tb = fifaMap?.[abKey(b.team1,b.team2)]?.date||''
+      const ta = getFifaInfo(a)?.date||''
+      const tb = getFifaInfo(b)?.date||''
       return ta<tb?-1:ta>tb?1:0
     }),
-  [ms,fifaMap])
+  [ms,fifaMap,resolveTeam])
   const played = sorted.filter(m=>m.score?.ft).length
   let roundDateStr = null
   for (const m of sorted) {
-    const fi = fifaMap?.[abKey(m.team1,m.team2)]
+    const fi = getFifaInfo(m)
     if (fi?.date) {
       try {
         const d = new Date(fi.date)
@@ -1045,7 +1111,7 @@ function RoundBlock({ roundName, ms, highlight, dayOffset, showDetails, fifaMap,
             key={i} m={m}
             showDetails={showDetails}
             dayOffset={dayOffset}
-            fifaInfo={fifaMap?.[abKey(m.team1,m.team2)]}
+            fifaInfo={getFifaInfo(m)}
             statusMap={statusMap}
             timelines={timelines}
             rankings={rankings}
@@ -1074,7 +1140,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
   const [timelines,    setTimelines]    = useState({})
   const [lineups,      setLineups]      = useState({})
   const [statsMap,     setStatsMap]     = useState({})
-  const [rankings,     setRankings]     = useState(null)
+  const [rankings,     setRankings]     = useState(RANKINGS_FALLBACK)
   const [currentLiveIdx, setCurrentLiveIdx] = useState(0)
   const [sidePanelMode,  setSidePanelMode]  = useState(false)
   const [sidePanelMks,   setSidePanelMks]   = useState([null, null])
@@ -1118,7 +1184,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
           const abbr = r.Team?.Abbreviation?.toUpperCase()
           if (abbr) map[abbr] = r.RankingPosition
         }
-        setRankings(map)
+        if (Object.keys(map).length > 10) setRankings(map)
       } catch {}
     }
     loadRankings()
@@ -1233,6 +1299,9 @@ export default function Matches({ matches, groups, onLiveChange }) {
           const s = m.MatchStatus ?? m.MatchStatusId ?? m.IdMatchStatus ?? m.Status
           const fifaState = s===3 ? 'in' : s>=4 ? 'post' : 'pre'
           const sc = [m.HomeTeamScore??m.Home?.Score??0, m.AwayTeamScore??m.Away?.Score??0]
+          const hp = m.HomePenaltyScore ?? m.Home?.PenaltyScore ?? null
+          const ap = m.AwayPenaltyScore ?? m.Away?.PenaltyScore ?? null
+          const penScore = (hp != null && ap != null) ? [hp, ap] : (existing.penScore || null)
           // Use FIFA's state only when it's definitive (live/post); otherwise keep ESPN's
           const state = fifaState !== 'pre' ? fifaState : (existing.state || 'pre')
           const liveScore = state==='in'
@@ -1260,6 +1329,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             isHT:      fifaState==='in' ? (m.MatchTime==='HT') : existing.isHT||false,
             liveScore,
             postScore,
+            penScore,
             _espnId:   existing._espnId || espnIds[key] || null,
             homeAbbr:  hA, awayAbbr: aA,
           }
@@ -1411,13 +1481,29 @@ export default function Matches({ matches, groups, onLiveChange }) {
     return () => clearInterval(iv)
   }, [])
 
-  // Augment static matches with live API completions
+  // Base resolver (from openfootball only) — used inside augMatches without circular dep
+  const resolverFromBase = useMemo(() => buildResolver(computeGroups(matches), matches), [matches])
+
+  // Augment static matches with live API completions (scores + penalties)
   const augMatches = useMemo(()=>matches.map(m=>{
-    if (m.score?.ft) return m
-    const fi = fifaMap[abKey(m.team1,m.team2)]
-    if (fi?.state==='post' && fi?.postScore) return { ...m, score: { ...m.score, ft: fi.postScore } }
+    let fi = fifaMap[abKey(m.team1,m.team2)]
+    if (!fi) {
+      const r1 = resolverFromBase(m.team1), r2 = resolverFromBase(m.team2)
+      if (r1 && r2) fi = fifaMap[abKey(r1, r2)]
+    }
+    if (m.score?.ft) {
+      // Carry penalty scores from FIFA even if openfootball already has ft
+      if (!m.score.p && fi?.penScore) return { ...m, score: { ...m.score, p: fi.penScore } }
+      return m
+    }
+    if (fi?.state==='post' && fi?.postScore) {
+      return { ...m, score: { ...m.score, ft: fi.postScore, ...(fi.penScore ? { p: fi.penScore } : {}) } }
+    }
     return m
-  }), [matches, fifaMap])
+  }), [matches, fifaMap, resolverFromBase])
+
+  // Resolves slot codes ("2A", "W73") to real team names using group standings
+  const resolveTeam = useMemo(() => buildResolver(computeGroups(augMatches), augMatches), [augMatches])
 
   const { rounds, activeIdx } = useMemo(()=>{
     const byRound = {}
@@ -1441,12 +1527,41 @@ export default function Matches({ matches, groups, onLiveChange }) {
   }, [augMatches, fifaMap])
 
   const visible = useMemo(()=>{
-    const out=[]
-    for (const i of [activeIdx-1, activeIdx, activeIdx+1]) {
-      if (i>=0&&i<rounds.length) out.push({ round:rounds[i], idx:i })
+    const ptDay = iso => { try { return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles'}).format(new Date(iso)) } catch { return '' } }
+    const todayPT = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles'}).format(new Date())
+
+    const resolveFifaInfo = (m) => {
+      const direct = fifaMap[abKey(m.team1, m.team2)]
+      if (direct) return direct
+      const r1 = resolveTeam(m.team1), r2 = resolveTeam(m.team2)
+      return (r1 && r2) ? fifaMap[abKey(r1, r2)] : null
+    }
+
+    const dayMap = {}
+    for (const m of augMatches) {
+      const fi = resolveFifaInfo(m)
+      const day = ptDay(fi?.date) || m.date || ''
+      if (!day) continue
+      if (!dayMap[day]) dayMap[day] = []
+      dayMap[day].push(m)
+    }
+
+    const allDays = Object.keys(dayMap).sort()
+    let todayIdx = allDays.indexOf(todayPT)
+    if (todayIdx < 0) todayIdx = allDays.findIndex(d => d > todayPT)
+    if (todayIdx < 0) todayIdx = allDays.length - 1
+
+    const out = []
+    for (const offset of [-1, 0, 1]) {
+      const i = todayIdx + offset
+      if (i < 0 || i >= allDays.length) continue
+      const day = allDays[i]
+      const ms  = dayMap[day] || []
+      const roundName = ms[0]?.round || day
+      out.push({ roundName, ms, dayOffset: offset, day })
     }
     return out
-  }, [rounds, activeIdx])
+  }, [augMatches, fifaMap, resolveTeam])
 
   const statusMap = useMemo(()=>buildTeamStatusMap(computeGroups(augMatches)), [augMatches])
   const hasLive   = liveMatches.length>0
@@ -1466,7 +1581,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
     return {
       mk, homeAbbr: entry.homeAbbr||'', awayAbbr: entry.awayAbbr||'',
       homeScore: entry.postScore?.[0] ?? 0, awayScore: entry.postScore?.[1] ?? 0,
-      clock: 'FT', isHT: false,
+      clock: 'FT', isHT: false, penScore: entry.penScore || null,
     }
   })
 
@@ -1475,41 +1590,35 @@ export default function Matches({ matches, groups, onLiveChange }) {
       <div className={`mx-schedule-row${sidePanelMode ? ' live-active' : hasLive ? '' : ' no-live'}`}>
         {sidePanelMode ? (
           <>
+            <div className="mx-sp-center">
+              {(() => {
+                const today = visible.find(v => v.dayOffset === 0)
+                if (!today) return null
+                return (
+                  <RoundBlock
+                    key={today.day}
+                    roundName={today.roundName}
+                    ms={today.ms}
+                    highlight={true}
+                    dayOffset={0}
+                    showDetails={true}
+                    fifaMap={fifaMap}
+                    statusMap={statusMap}
+                    timelines={timelines}
+                    rankings={rankings}
+                    resolveTeam={resolveTeam}
+                  />
+                )
+              })()}
+            </div>
             <LiveSidePanel
               liveMatch={panelMatch[0]}
               timeline={panelMatch[0] ? (timelines[panelMatch[0].mk]||[]) : []}
               lineup={panelMatch[0] ? lineups[panelMatch[0].mk] : null}
               sofaPlayers={sofaData[panelMatch[0]?.mk]}
               stats={statsMap[panelMatch[0]?.mk]}
-              panelSide="left"
+              panelSide="right"
             />
-            <div className="mx-sp-center">
-              {rounds[activeIdx] && (() => {
-                const now = new Date()
-                const todayMs = rounds[activeIdx][1].filter(m => {
-                  const fi = fifaMap[abKey(m.team1, m.team2)]
-                  if (!fi?.date) return false
-                  const d = new Date(fi.date)
-                  return d.getFullYear() === now.getFullYear() &&
-                         d.getMonth() === now.getMonth() &&
-                         d.getDate() === now.getDate()
-                })
-                return (
-                <RoundBlock
-                  key={rounds[activeIdx][0]}
-                  roundName={rounds[activeIdx][0]}
-                  ms={todayMs}
-                  highlight={true}
-                  dayOffset={0}
-                  showDetails={true}
-                  fifaMap={fifaMap}
-                  statusMap={statusMap}
-                  timelines={timelines}
-                  rankings={rankings}
-                />
-                )
-              })()}
-            </div>
             {panelMatch[1] && (
               <LiveSidePanel
                 liveMatch={panelMatch[1]}
@@ -1522,18 +1631,19 @@ export default function Matches({ matches, groups, onLiveChange }) {
             )}
           </>
         ) : (
-          visible.map(({ round:[name,ms], idx })=>(
+          visible.map(({ roundName, ms, dayOffset, day }) => (
             <RoundBlock
-              key={name}
-              roundName={name}
+              key={day}
+              roundName={roundName}
               ms={ms}
-              highlight={idx===activeIdx}
-              dayOffset={idx-activeIdx}
-              showDetails={idx===activeIdx || idx===activeIdx-1}
+              highlight={dayOffset === 0}
+              dayOffset={dayOffset}
+              showDetails={dayOffset === 0 || dayOffset === -1}
               fifaMap={fifaMap}
-              statusMap={idx<=activeIdx ? statusMap : undefined}
+              statusMap={dayOffset <= 0 ? statusMap : undefined}
               timelines={timelines}
               rankings={rankings}
+              resolveTeam={resolveTeam}
             />
           ))
         )}

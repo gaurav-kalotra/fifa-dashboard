@@ -123,8 +123,10 @@ export function buildResolver(rankedGroups, matches) {
     const m = byNum[num]
     if (!m?.score?.ft) return null
     const [a, b] = m.score.ft
-    if (a === b) return null
-    return resolve(a > b ? m.team1 : m.team2)
+    if (a !== b) return resolve(a > b ? m.team1 : m.team2)
+    const pen = m.score.p
+    if (pen) return resolve(pen[0] > pen[1] ? m.team1 : m.team2)
+    return null
   }
 
   function resolve(code) {

@@ -1,4 +1,4 @@
-import { ab, flagUrl } from '../utils'
+import { ab, flagUrl, teamStatus } from '../utils'
 
 const GROUP_ORDER = 'ABCDEFGHIJKL'.split('')
 
@@ -9,7 +9,8 @@ export default function Standings({ groups }) {
   return (
     <div>
       <div className="legend">
-        <span className="legend-dot" /> Advance to Round of 32
+        <span className="legend-dot qual" /> Qualified &nbsp;
+        <span className="legend-dot elim" /> Eliminated
       </div>
       <div className="groups-grid">
         {GROUP_ORDER.map((g) => {
@@ -31,8 +32,9 @@ export default function Standings({ groups }) {
                 <tbody>
                   {entries.map((e, i) => {
                     const url = flagUrl(e.t)
+                    const st = teamStatus(entries, i)
                     return (
-                      <tr key={e.t} className={i < 2 ? 'row-qualify' : ''}>
+                      <tr key={e.t} className={`row-${st}`}>
                         <td className="col-pos">{i + 1}</td>
                         <td className="col-team-cell">
                           <div className="col-team-inner">
