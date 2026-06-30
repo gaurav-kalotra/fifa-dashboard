@@ -730,31 +730,37 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
       {/* Match facts */}
       <div className="mx-facts-row">
         <div className="mx-facts-col home">
-          {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>(
-            <span key={i} className="mx-fact">
-              {e.min && <span className="mx-fact-min">{e.min}'</span>}
-              <EventIcon type={e.type} />
-              {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
-              {e.player && <span className="mx-fact-nm">{jerseyName(e.player)}</span>}
-            </span>
-          ))}
+          {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
+            const nm = e.player || homePlayers.find(p=>String(p.jersey)===String(e.jersey))?.name || ''
+            return (
+              <span key={i} className="mx-fact">
+                {e.min && <span className="mx-fact-min">{e.min}'</span>}
+                <EventIcon type={e.type} />
+                {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
+                {nm && <span className="mx-fact-nm">{jerseyName(nm)}</span>}
+              </span>
+            )
+          })}
         </div>
         <div className="mx-facts-col away">
-          {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>(
-            <span key={i} className="mx-fact">
-              {e.player && <span className="mx-fact-nm">{jerseyName(e.player)}</span>}
-              {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
-              <EventIcon type={e.type} />
-              {e.min && <span className="mx-fact-min">{e.min}'</span>}
-            </span>
-          ))}
+          {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
+            const nm = e.player || awayPlayers.find(p=>String(p.jersey)===String(e.jersey))?.name || ''
+            return (
+              <span key={i} className="mx-fact">
+                {nm && <span className="mx-fact-nm">{jerseyName(nm)}</span>}
+                {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
+                <EventIcon type={e.type} />
+                {e.min && <span className="mx-fact-min">{e.min}'</span>}
+              </span>
+            )
+          })}
         </div>
       </div>
 
       {/* Tab switcher */}
       <div className="mx-lsp-tabs">
         <button className={`mx-lsp-tab${tab==='lineup'?' active':''}`} onClick={()=>{clearTimeout(tabTimerRef.current);setTab('lineup')}}>Lineup</button>
-        <button className={`mx-lsp-tab${tab==='stats'?' active':''}`} onClick={switchToStats}>Stats{!atHT&&<span className="mx-lsp-tab-peek"> 5s</span>}</button>
+        <button className={`mx-lsp-tab${tab==='stats'?' active':''}`} onClick={switchToStats}>Stats</button>
       </div>
 
       {tab === 'stats' ? (
