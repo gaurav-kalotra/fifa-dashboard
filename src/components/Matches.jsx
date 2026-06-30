@@ -738,60 +738,8 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerR
       {/* Side-by-side: pitch column (with header) | stats column */}
       <div className="mx-lsp-body">
 
-        {/* Left: header + facts + pitch stacked */}
+        {/* Left: pitch full height */}
         <div className="mx-lsp-pitch-col">
-          <div className="mx-lsp-hdr">
-            <div className="mx-lsp-team">
-              <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
-              <span className="mx-lsp-abbr">{homeAbbr}</span>
-              {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
-                <div className="mx-lsp-facts home">
-                  {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
-                    const nm = resolveEvtName(e, homePlayers)
-                    return (
-                      <span key={i} className="mx-fact-line">
-                        <EventIcon type={e.type} />
-                        {e.min && <span className="mx-fact-min">{e.min}'</span>}
-                        {nm && <span className="mx-fact-nm">{nm}</span>}
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="mx-lsp-mid">
-              {!isHT && clock && (
-                <div className="mx-lsp-clock-wrap">
-                  <div className="mx-lsp-hbar left" />
-                  <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>
-                  <div className="mx-lsp-hbar right" />
-                </div>
-              )}
-              {kickoffTime && <span className="mx-lsp-kickoff">{kickoffTime}</span>}
-              <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
-              {liveMatch?.penScore && <span className="mx-pen-score">({liveMatch.penScore[0]}–{liveMatch.penScore[1]}) PEN</span>}
-              {isHT && <span className="mx-lsp-ht-badge">HALF TIME</span>}
-            </div>
-            <div className="mx-lsp-team away">
-              {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
-                <div className="mx-lsp-facts away">
-                  {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
-                    const nm = resolveEvtName(e, awayPlayers)
-                    return (
-                      <span key={i} className="mx-fact-line">
-                        {nm && <span className="mx-fact-nm">{nm}</span>}
-                        {e.min && <span className="mx-fact-min">{e.min}'</span>}
-                        <EventIcon type={e.type} />
-                      </span>
-                    )
-                  })}
-                </div>
-              )}
-              <span className="mx-lsp-abbr">{awayAbbr}</span>
-              <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
-            </div>
-          </div>
-
           <div className="mx-vpitch">
           <div className="mx-vp-corner-label" style={{top:'1%',left:'1%'}}>
             <div className="mx-vp-tlabel">
@@ -825,6 +773,53 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerR
 
         {/* Stats panel alongside pitch */}
         <div className="mx-lsp-stats-side">
+          <div className="mx-lsp-hdr">
+            <div className="mx-lsp-team">
+              <img src={flagUrl(homeAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
+              <span className="mx-lsp-abbr">{homeAbbr}</span>
+              {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
+                <div className="mx-lsp-facts home">
+                  {homeEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
+                    const nm = resolveEvtName(e, homePlayers)
+                    return (
+                      <span key={i} className="mx-fact-line">
+                        <EventIcon type={e.type} />
+                        {e.min && <span className="mx-fact-min">{e.min}'</span>}
+                        {nm && <span className="mx-fact-nm">{nm}</span>}
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="mx-lsp-mid">
+              {!isHT && clock && (
+                <span className={`mx-lsp-clock${isFT?' ft':''}`}>{clock}</span>
+              )}
+              {kickoffTime && <span className="mx-lsp-kickoff">{kickoffTime}</span>}
+              <span className="mx-lsp-score">{homeScore}–{awayScore}</span>
+              {liveMatch?.penScore && <span className="mx-pen-score">({liveMatch.penScore[0]}–{liveMatch.penScore[1]}) PEN</span>}
+              {isHT && <span className="mx-lsp-ht-badge">HALF TIME</span>}
+            </div>
+            <div className="mx-lsp-team away">
+              {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').length>0 && (
+                <div className="mx-lsp-facts away">
+                  {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>{
+                    const nm = resolveEvtName(e, awayPlayers)
+                    return (
+                      <span key={i} className="mx-fact-line">
+                        {nm && <span className="mx-fact-nm">{nm}</span>}
+                        {e.min && <span className="mx-fact-min">{e.min}'</span>}
+                        <EventIcon type={e.type} />
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+              <span className="mx-lsp-abbr">{awayAbbr}</span>
+              <img src={flagUrl(awayAbbr)} alt="" className="mx-lsp-flag" onError={e=>{e.target.style.display='none'}} />
+            </div>
+          </div>
           <div className="mx-lsp-stats-hdr">MATCH STATS</div>
           <StatsPanel stats={stats} homeAbbr={homeAbbr} awayAbbr={awayAbbr} />
           {(homeBench.length || awayBench.length) && (
@@ -995,11 +990,6 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
       {/* ── Row 1: live status bar (top, live games only) ── */}
       {isLive && (
         <>
-          {clockLabel && (
-            <div className="mx-live-clock-row">
-              <span className="mx-live-clock-lbl">{clockLabel}</span>
-            </div>
-          )}
           <div className="mx-live-tag-row">
             <div className="mx-live-green-dot" />
             <span className={`mx-live-status-lbl${isHT?' ht':''}`}>{statusLabel}</span>
