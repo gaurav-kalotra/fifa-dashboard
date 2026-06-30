@@ -1010,10 +1010,8 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
       <div className="mx-center">
         {played ? (
           <>
-            <div className="mx-center-above">
-              {localTime && <span className="mx-match-time">{localTime}</span>}
-              <span className="mx-result-lbl">{resultLabel}</span>
-            </div>
+            {localTime && <span className="mx-match-time">{localTime}</span>}
+            <span className="mx-result-lbl">{resultLabel}</span>
             <span className="mx-score">{ds1}–{ds2}</span>
             {pen && <span className="mx-pen-score">({pen[0]}–{pen[1]}) PEN</span>}
           </>
@@ -1024,7 +1022,7 @@ function MatchRow({ m, showDetails, dayOffset, fifaInfo, statusMap, timelines, r
           </>
         ) : (
           <>
-            {localTime && <div className="mx-center-above"><span className="mx-match-time">{localTime}</span></div>}
+            {localTime && <span className="mx-match-time">{localTime}</span>}
             <span className="mx-vs">vs</span>
           </>
         )}
