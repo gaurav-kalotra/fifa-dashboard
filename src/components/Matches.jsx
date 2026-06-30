@@ -1214,7 +1214,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
       try {
         const d = await fetch(SS_POWER_URL).then(r => r.json())
         const map = {}
-        for (const item of d.topPlayers || []) {
+        for (const item of d.topPlayers?.rating || []) {
           const id = item.player?.id
           const rating = item.statistics?.rating
           if (id && rating) map[id] = +Number(rating).toFixed(2)

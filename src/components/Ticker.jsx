@@ -148,7 +148,7 @@ export default function Ticker({ matches, groups, isTV }) {
     const loadPower = async () => {
       try {
         const d = await fetch(SS_POWER_URL).then(r => r.json())
-        const players = (d.topPlayers || []).slice(0, 15).map(item => ({
+        const players = (d.topPlayers?.rating || []).slice(0, 15).map(item => ({
           name: item.player?.name || '',
           shortName: item.player?.shortName || item.player?.name || '',
           team: item.player?.team?.name || '',
