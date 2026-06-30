@@ -734,16 +734,18 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, panelS
             <span key={i} className="mx-fact">
               {e.min && <span className="mx-fact-min">{e.min}'</span>}
               <EventIcon type={e.type} />
-              {evtLabel(e) && <span className="mx-fact-nm">{evtLabel(e)}</span>}
+              {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
+              {e.player && <span className="mx-fact-nm">{jerseyName(e.player)}</span>}
             </span>
           ))}
         </div>
         <div className="mx-facts-col away">
           {awayEvts.filter(e=>e.type==='goal'||e.type==='yellow'||e.type==='red').map((e,i)=>(
             <span key={i} className="mx-fact">
-              {e.min && <span className="mx-fact-min">{e.min}'</span>}
+              {e.player && <span className="mx-fact-nm">{jerseyName(e.player)}</span>}
+              {e.jersey && <span className="mx-fact-jn">#{e.jersey}</span>}
               <EventIcon type={e.type} />
-              {evtLabel(e) && <span className="mx-fact-nm">{evtLabel(e)}</span>}
+              {e.min && <span className="mx-fact-min">{e.min}'</span>}
             </span>
           ))}
         </div>
@@ -1475,11 +1477,17 @@ export default function Matches({ matches, groups, onLiveChange }) {
               panelSide="left"
             />
             <div className="mx-sp-center">
-              {rounds[activeIdx] && (
+              {rounds[activeIdx] && (() => {
+                const todayUTC = new Date().toISOString().slice(0, 10)
+                const todayMs = rounds[activeIdx][1].filter(m => {
+                  const fi = fifaMap[abKey(m.team1, m.team2)]
+                  return fi?.date?.slice(0, 10) === todayUTC || statusMap[fi?.mk] != null
+                })
+                return (
                 <RoundBlock
                   key={rounds[activeIdx][0]}
                   roundName={rounds[activeIdx][0]}
-                  ms={rounds[activeIdx][1]}
+                  ms={todayMs}
                   highlight={true}
                   dayOffset={0}
                   showDetails={true}
@@ -1488,7 +1496,8 @@ export default function Matches({ matches, groups, onLiveChange }) {
                   timelines={timelines}
                   rankings={rankings}
                 />
-              )}
+                )
+              })()}
             </div>
             {panelMatch[1] && (
               <LiveSidePanel

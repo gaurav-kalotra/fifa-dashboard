@@ -1886,11 +1886,15 @@ body.tv-mode {
 }
 .mx-fact-min {
   font-family:'Space Mono',monospace;
-  font-size:clamp(5px,.55vw,7px); color:rgba(251,191,36,.6);
+  font-size:clamp(7px,.7vw,10px); color:rgba(251,191,36,.7);
+}
+.mx-fact-jn {
+  font-family:'Space Mono',monospace;
+  font-size:clamp(7px,.7vw,10px); color:rgba(251,191,36,.9); font-weight:600;
 }
 .mx-fact-nm {
   font-family:'Inter',system-ui,sans-serif;
-  font-size:clamp(5px,.6vw,8px); color:rgba(255,255,255,.7);
+  font-size:clamp(7px,.75vw,11px); color:rgba(255,255,255,.9); font-weight:500;
 }
 
 /* Roster side-by-side layout */
