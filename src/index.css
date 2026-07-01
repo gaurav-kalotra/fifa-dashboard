@@ -528,6 +528,10 @@ body {
   50%      { box-shadow: 0 0 20px rgba(251,191,36,.75), 0 0 38px rgba(251,191,36,.35); }
 }
 .bk-num {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
@@ -535,6 +539,13 @@ body {
   padding: 5px 12px;
   border-bottom: 1px solid var(--border);
   background: rgba(255,255,255,0.02);
+}
+.bk-time {
+  font-family: 'Space Mono', monospace;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+  white-space: nowrap;
 }
 .bk-team {
   display: flex;

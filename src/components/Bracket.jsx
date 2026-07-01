@@ -1,5 +1,20 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ab, flagUrl, buildResolver } from '../utils'
+
+const FIFA_CAL_URL = 'https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&language=en&count=500'
+const rawAbKey = (a, b) => [a.toUpperCase(), b.toUpperCase()].sort().join('|')
+
+function fmtKickoffPT(iso) {
+  if (!iso) return null
+  try {
+    const d = new Date(iso)
+    if (isNaN(d)) return null
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+      timeZone: 'America/Los_Angeles', timeZoneName: 'short',
+    })
+  } catch { return null }
+}
 
 const ROUNDS = [
   { key: 'Round of 32', label: 'R32' },
@@ -34,7 +49,7 @@ function TeamSlot({ code, real, score, penScore, isWinner, isLoser, isPlayed }) 
   )
 }
 
-function BracketMatch({ match, resolve, liveMatches }) {
+function BracketMatch({ match, resolve, liveMatches, fifaTimeMap }) {
   const t1 = resolve(match.team1)
   const t2 = resolve(match.team2)
   const ft = match.score?.ft
@@ -52,10 +67,16 @@ function BracketMatch({ match, resolve, liveMatches }) {
     (lm.homeAbbr === a1 && lm.awayAbbr === a2) ||
     (lm.homeAbbr === a2 && lm.awayAbbr === a1)
   )
+  const kickoff = a1 && a2 ? fmtKickoffPT(fifaTimeMap?.[rawAbKey(a1, a2)]) : null
 
   return (
     <div className={`bk-match${isPlayed ? ' bk-played' : ''}${isLive ? ' bk-live' : ''}`}>
-      {match.num && <div className="bk-num">Match {match.num}{pen ? <span className="bk-num-pen"> PEN</span> : et ? <span className="bk-num-pen"> AET</span> : ''}</div>}
+      {match.num && (
+        <div className="bk-num">
+          <span>Match {match.num}{pen ? <span className="bk-num-pen"> PEN</span> : et ? <span className="bk-num-pen"> AET</span> : ''}</span>
+          {kickoff && <span className="bk-time">{kickoff}</span>}
+        </div>
+      )}
       <TeamSlot code={match.team1} real={t1} score={s1} penScore={pen?.[0] ?? null} isWinner={win1} isLoser={isPlayed && !win1} isPlayed={isPlayed} />
       <TeamSlot code={match.team2} real={t2} score={s2} penScore={pen?.[1] ?? null} isWinner={win2} isLoser={isPlayed && !win2} isPlayed={isPlayed} />
     </div>
@@ -64,9 +85,29 @@ function BracketMatch({ match, resolve, liveMatches }) {
 
 export default function Bracket({ matches, groups, liveMatches = [] }) {
   const [activeRound, setActiveRound] = useState('Round of 32')
+  const [fifaTimeMap, setFifaTimeMap] = useState({})
   const resolve = useMemo(() => buildResolver(groups, matches), [groups, matches])
   const roundMatches = useMemo(() => matches.filter(m => m.round === activeRound), [matches, activeRound])
   const cols = activeRound === 'Round of 32' ? 2 : 1
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetch(FIFA_CAL_URL).then(r => r.json())
+        const map = {}
+        for (const r of data.Results || []) {
+          const hA = (r.Home?.Abbreviation || r.HomeTeam?.Abbreviation || '').toUpperCase()
+          const aA = (r.Away?.Abbreviation || r.AwayTeam?.Abbreviation || '').toUpperCase()
+          if (!hA || !aA || !r.Date) continue
+          map[rawAbKey(hA, aA)] = r.Date
+        }
+        setFifaTimeMap(map)
+      } catch {}
+    }
+    load()
+    const iv = setInterval(load, 5 * 60_000)
+    return () => clearInterval(iv)
+  }, [])
 
   return (
     <div className="bracket">
@@ -85,7 +126,7 @@ export default function Bracket({ matches, groups, liveMatches = [] }) {
       </div>
       <div className={`bk-grid cols-${cols}`}>
         {roundMatches.map(m => (
-          <BracketMatch key={m.num} match={m} resolve={resolve} liveMatches={liveMatches} />
+          <BracketMatch key={m.num} match={m} resolve={resolve} liveMatches={liveMatches} fifaTimeMap={fifaTimeMap} />
         ))}
       </div>
     </div>
