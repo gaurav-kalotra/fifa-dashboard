@@ -219,6 +219,15 @@ export default function App() {
     }
   }, [])
 
+  // Kiosk displays (Chromecast/DashCast) can silently stall after running for a
+  // while — the embedded browser is far more constrained than a real one. A full
+  // reload every few minutes is cheap insurance against a stuck/frozen screen.
+  useEffect(() => {
+    if (!isTV) return
+    const t = setInterval(() => window.location.reload(), 5 * 60_000)
+    return () => clearInterval(t)
+  }, [])
+
   const [hasLive, setHasLive] = useState(false)
   const hasLiveRef = useRef(false)
   useEffect(() => { hasLiveRef.current = hasLive }, [hasLive])
