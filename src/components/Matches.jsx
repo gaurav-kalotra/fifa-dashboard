@@ -177,8 +177,9 @@ function parseFifaLineup(data) {
       jersey: String(p.ShirtNumber ?? ''), pos: FIFA_POS_ABBR[p.Position] || 'M',
       photo: p.PlayerPicture?.PictureUrl || null, jerseyImg: null, formationPlace: 99, rating: null,
     }))
-    if (side === 'home') { result.home = players; result.homeBench = bench; result.homeFormation = td.Tactics || ''; result.homeCoach = hc?.Name?.[0]?.Description || ''; result.fifaHomeAbbr = abbr }
-    else                 { result.away = players; result.awayBench = bench; result.awayFormation = td.Tactics || ''; result.awayCoach = hc?.Name?.[0]?.Description || ''; result.fifaAwayAbbr = abbr }
+    const coachPhoto = hc?.PictureUrl || hc?.CoachPicture?.PictureUrl || null
+    if (side === 'home') { result.home = players; result.homeBench = bench; result.homeFormation = td.Tactics || ''; result.homeCoach = hc?.Name?.[0]?.Description || ''; result.homeCoachPhoto = coachPhoto; result.fifaHomeAbbr = abbr }
+    else                 { result.away = players; result.awayBench = bench; result.awayFormation = td.Tactics || ''; result.awayCoach = hc?.Name?.[0]?.Description || ''; result.awayCoachPhoto = coachPhoto; result.fifaAwayAbbr = abbr }
   }
   return result
 }
@@ -438,6 +439,8 @@ function HalfPitch({ players, side='home', coach='' }) {
   const coachLastName = (coach||'').trim().split(/\s+/).slice(-1)[0]
   return (
     <div className={`mx-half-pitch ${side}`}>
+      <div className={`mx-half-arc ${side}`} />
+      <div className={`mx-half-goal ${side}`} />
       {cols.map((col,ci)=>col.map((p,i)=>{
         const n=col.length, x=colX[ci], y=n<=1?50:15+(i/(n-1))*70
         return <PitchPlayer key={p.id||`${ci}-${i}`} player={p} x={x} y={y} />
@@ -758,7 +761,18 @@ function LiveSidePanel({ liveMatch, timeline, lineup, sofaPlayers, stats, powerR
             {lineup?.homeCoach && <div className="mx-vp-coach-tag">🧥 {lineup.homeCoach.trim().split(/\s+/).slice(-1)[0]}</div>}
           </div>
           <div className="mx-vp-half" />
+          <div className="mx-vp-circle" />
           <div className="mx-vp-dot" />
+          <div className="mx-vp-box away" />
+          <div className="mx-vp-box-6 away" />
+          <div className="mx-vp-spot away" />
+          <div className="mx-vp-arc away" />
+          <div className="mx-vp-goal away" />
+          <div className="mx-vp-box home" />
+          <div className="mx-vp-box-6 home" />
+          <div className="mx-vp-spot home" />
+          <div className="mx-vp-arc home" />
+          <div className="mx-vp-goal home" />
           {awayRows.map((row,ri)=>row.map((p,pi)=>(
             <VPlayer key={`a${p.id||`${ri}-${pi}`}`} player={p} x={spreadX(pi,row.length)} y={awayYs[ri]} isHome={false} powerRatings={powerRatings} />
           )))}
@@ -1284,7 +1298,7 @@ export default function Matches({ matches, groups, onLiveChange }) {
             const parsed = []
             const seenD = new Set()
             for (const d of details) {
-              const dedup = `${d.clock?.value}|${d.type?.id}|${d.participants?.[0]?.athlete?.id}`
+              const dedup = `${d.clock?.value}|${d.type?.id}|${d.athletesInvolved?.[0]?.id}`
               if (seenD.has(dedup)) continue; seenD.add(dedup)
               const tt = String(d.type?.text || d.type?.name || '').toLowerCase()
               const ti = String(d.type?.id || '')
@@ -1295,13 +1309,12 @@ export default function Matches({ matches, groups, onLiveChange }) {
               const dv = d.clock?.displayValue, sv = d.clock?.value
               const min = dv ? String(parseInt(dv) || dv.split(':')[0] || '')
                             : typeof sv === 'number' ? String(Math.floor(sv / 60)) : ''
-              const scorerP = d.participants?.find(x => {
-                const xt = String(x.type?.id||''); const xn = (x.type?.text||'').toLowerCase()
-                return xt==='scorer'||xt==='1'||xn.includes('scorer')
-              }) || d.participants?.[0]
-              const player = scorerP?.athlete?.displayName || ''
-              const jersey = String(scorerP?.athlete?.jersey || scorerP?.athlete?.jerseyNumber || '')
-              const playerOn = isSub ? (d.participants?.find(x=>(x.type?.text||'').toLowerCase().includes('substitut'))?.athlete?.displayName || '') : ''
+              // Real ESPN scoreboard "details" entries list the player(s) flat under
+              // athletesInvolved (no nested .athlete, no .type) — not .participants.
+              const scorer = d.athletesInvolved?.[0]
+              const player = scorer?.displayName || scorer?.shortName || ''
+              const jersey = String(scorer?.jersey || '')
+              const playerOn = isSub ? (d.athletesInvolved?.[1]?.displayName || '') : ''
               const tid = String(d.team?.id || '')
               const side = tid === hId ? 'home' : tid === aId ? 'away' : ''
               const isRed = d.redCard || tt.includes('red card') || ti === '95'
@@ -1474,10 +1487,11 @@ export default function Matches({ matches, groups, onLiveChange }) {
       if (Object.keys(newStats).length) setStatsMap(prev => ({ ...prev, ...newStats }))
 
       // ── Completed match events ────────────────────────────────
-      // Step 1: store board events (type + time + side, but no player names from board)
+      // Step 1: store board events as a fallback. Don't clobber live matches —
+      // they already got richer events from FIFA_LIVE/ESPN_SUM just above.
       for (const [key, evts] of Object.entries(eventsFromBoard)) {
         const mk = newMap[key]?.mk
-        if (mk) newTimelines[mk] = evts
+        if (mk && !newTimelines[mk]?.length) newTimelines[mk] = evts
       }
       // Step 2: fetch ESPN summary to get player names + fill any missing events
       const needSummary = Object.entries(newMap).filter(([key, v]) =>

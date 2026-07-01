@@ -1442,17 +1442,47 @@ body.tv-mode {
 .mx-half-pitch.away {
   background:linear-gradient(90deg, #216820 0%, #1c5a1c 70%, #163d16 100%);
 }
-/* Goal box on the far end of each half */
+/* Goal box (18-yard) + 6-yard box on the far end of each half */
 .mx-half-pitch.home::after {
   content:''; position:absolute; pointer-events:none;
   left:0; top:27%; bottom:27%; width:7%;
-  border:1px solid rgba(255,255,255,.18); border-left:none;
+  border:1px solid rgba(255,255,255,.22); border-left:none;
 }
 .mx-half-pitch.away::after {
   content:''; position:absolute; pointer-events:none;
   right:0; top:27%; bottom:27%; width:7%;
-  border:1px solid rgba(255,255,255,.18); border-right:none;
+  border:1px solid rgba(255,255,255,.22); border-right:none;
 }
+.mx-half-pitch.home::before {
+  content:''; position:absolute; pointer-events:none; z-index:1;
+  left:0; top:38%; bottom:38%; width:2.5%;
+  border:1px solid rgba(255,255,255,.22); border-left:none;
+}
+.mx-half-pitch.away::before {
+  content:''; position:absolute; pointer-events:none; z-index:1;
+  right:0; top:38%; bottom:38%; width:2.5%;
+  border:1px solid rgba(255,255,255,.22); border-right:none;
+}
+/* Penalty arc ("the D") — circle centered on the box edge, clipped to the outer half */
+.mx-half-arc {
+  position:absolute; top:50%;
+  height:34%; aspect-ratio:1/1; border-radius:50%;
+  border:1px solid rgba(255,255,255,.22);
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.mx-half-arc.home { left:7%; clip-path:inset(0 0 0 50%); }
+.mx-half-arc.away { left:93%; clip-path:inset(0 50% 0 0); }
+/* Goal mouth tick on the goal line */
+.mx-half-goal {
+  position:absolute; top:50%; width:1.6%; height:14%;
+  border:2px solid rgba(255,255,255,.5); border-radius:1px;
+  background:rgba(255,255,255,.06);
+  transform:translateY(-50%);
+  pointer-events:none;
+}
+.mx-half-goal.home { left:-3px; }
+.mx-half-goal.away { right:-3px; }
 
 /* Player marker */
 .mx-pp {
@@ -1579,11 +1609,19 @@ body.tv-mode {
     rgba(22,84,22,.88) 0, rgba(22,84,22,.88) 12.5%,
     rgba(17,68,17,.88) 12.5%, rgba(17,68,17,.88) 25%
   );
+  border:1px solid rgba(255,255,255,.22);
   overflow:hidden;
 }
 .mx-vp-half {
   position:absolute; left:8%; right:8%; top:50%;
   height:1px; background:rgba(255,255,255,.3);
+}
+.mx-vp-circle {
+  position:absolute; left:50%; top:50%;
+  width:22%; aspect-ratio:1/1;
+  border:1px solid rgba(255,255,255,.3); border-radius:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
 }
 .mx-vp-dot {
   position:absolute; left:50%; top:50%;
@@ -1591,6 +1629,48 @@ body.tv-mode {
   background:rgba(255,255,255,.45);
   transform:translate(-50%,-50%);
 }
+
+/* Goal box (18-yard) + 6-yard box + penalty arc ("the D") at each end */
+.mx-vp-box {
+  position:absolute; left:18%; right:18%; height:13%;
+  border:1px solid rgba(255,255,255,.3);
+  pointer-events:none;
+}
+.mx-vp-box.away { top:0; border-top:none; }
+.mx-vp-box.home { bottom:0; border-bottom:none; }
+.mx-vp-box-6 {
+  position:absolute; left:36%; right:36%; height:5%;
+  border:1px solid rgba(255,255,255,.3);
+  pointer-events:none;
+}
+.mx-vp-box-6.away { top:0; border-top:none; }
+.mx-vp-box-6.home { bottom:0; border-bottom:none; }
+.mx-vp-spot {
+  position:absolute; left:50%;
+  width:3px; height:3px; border-radius:50%;
+  background:rgba(255,255,255,.4);
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.mx-vp-spot.away { top:9%; }
+.mx-vp-spot.home { bottom:9%; }
+.mx-vp-arc {
+  position:absolute; left:50%;
+  width:18%; aspect-ratio:1/1; border-radius:50%;
+  border:1px solid rgba(255,255,255,.3);
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.mx-vp-arc.away { top:13%; clip-path:inset(50% 0 0 0); }
+.mx-vp-arc.home { bottom:13%; clip-path:inset(0 0 50% 0); }
+.mx-vp-goal {
+  position:absolute; left:44%; right:44%; height:1.6%;
+  border:2px solid rgba(255,255,255,.55); border-radius:1px;
+  background:rgba(255,255,255,.06);
+  pointer-events:none;
+}
+.mx-vp-goal.away { top:-3px; }
+.mx-vp-goal.home { bottom:-3px; }
 .mx-vp-corner-label {
   position:absolute; display:flex; flex-direction:column; gap:2px;
   pointer-events:none; z-index:1;

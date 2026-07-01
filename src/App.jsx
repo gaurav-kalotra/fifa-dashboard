@@ -132,8 +132,12 @@ export default function App() {
           if (!hA || !aA) continue
           const key = [hA, aA].sort().join('|')
           const s = r.MatchStatus ?? r.MatchStatusId ?? r.IdMatchStatus ?? r.Status
-          if (s >= 4) {
-            scoreMap[key] = [r.HomeTeamScore ?? r.Home?.Score ?? 0, r.AwayTeamScore ?? r.Away?.Score ?? 0]
+          const hs = r.HomeTeamScore ?? r.Home?.Score
+          const as = r.AwayTeamScore ?? r.Away?.Score
+          // FIFA's MatchStatus codes drift (finished matches show up as 0, not the
+          // documented "post" codes) — trust the presence of a final score instead.
+          if (hs != null && as != null && s !== 1 && s !== 3) {
+            scoreMap[key] = [hs, as]
           } else if (s === 3) {
             newLive.push({ homeAbbr: hA, awayAbbr: aA })
           }
