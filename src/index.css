@@ -2433,6 +2433,10 @@ body.tv-mode {
   font-family:'Oswald',system-ui,sans-serif; font-size:1.25vh;
   color:#fbbf24; letter-spacing:.14em; text-align:center;
 }
+.bk-final-date {
+  font-family:'Space Mono',monospace; font-size:.75vh;
+  color:rgba(251,191,36,.55); text-align:center; white-space:nowrap;
+}
 .bk-final-row {
   display:flex; align-items:center; gap:.3vw; font-size:1.3vh;
   color:rgba(247,245,240,.92); width:100%;

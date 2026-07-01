@@ -244,7 +244,7 @@ function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums, gre
 }
 
 // ── Final match card (center) ─────────────────────────────────
-function FinalCard({ byNum, resolve }) {
+function FinalCard({ byNum, resolve, fifaTimeMap }) {
   const m = byNum[104]
   if (!m) return (
     <div className="bk-final-slot">
@@ -263,11 +263,15 @@ function FinalCard({ byNum, resolve }) {
   const played = !!ft
   const win1 = played && (pen ? pen[0] > pen[1] : (s1 ?? 0) > (s2 ?? 0))
   const win2 = played && (pen ? pen[1] > pen[0] : (s2 ?? 0) > (s1 ?? 0))
+  const a1 = t1 ? ab(t1) : null, a2 = t2 ? ab(t2) : null
+  const kickoff = a1 && a2 ? fmtKickoffPT(fifaTimeMap?.[rawAbKey(a1, a2)]) : null
+  const dateStr = kickoff || fmtDate(m.date)
 
   return (
     <div className="bk-final-slot">
       <img src="/assets/wc-trophy2.png" alt="" className="bk-final-trophy" />
       <span className="bk-final-label">FINAL</span>
+      {dateStr && <span className="bk-final-date">{dateStr}</span>}
       <div className={`bk-final-row${win1 ? ' win' : ''}`}>
         <Flag name={t1} cls="bk-flag-lg" />
         <span>{t1 ? ab(t1) : (m.team1 || '?')}</span>
@@ -427,7 +431,7 @@ export default function Schedule({ groups, matches }) {
           <BracketHalf half={LEFT} byNum={byNum} resolve={resolve} side="left"
             todayNums={todayNums} potentialNums={potentialNums}
             greenSlots={gs} redSlots={rs} elimSlots={es} fifaTimeMap={fifaTimeMap} />
-          <FinalCard byNum={byNum} resolve={resolve} />
+          <FinalCard byNum={byNum} resolve={resolve} fifaTimeMap={fifaTimeMap} />
           <BracketHalf half={RIGHT} byNum={byNum} resolve={resolve} side="right"
             todayNums={todayNums} potentialNums={potentialNums}
             greenSlots={gs} redSlots={rs} elimSlots={es} fifaTimeMap={fifaTimeMap} />
