@@ -1,20 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ab, flagUrl, buildResolver } from '../utils'
-
-const FIFA_CAL_URL = 'https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&language=en&count=500'
-const rawAbKey = (a, b) => [a.toUpperCase(), b.toUpperCase()].sort().join('|')
-
-function fmtKickoffPT(iso) {
-  if (!iso) return null
-  try {
-    const d = new Date(iso)
-    if (isNaN(d)) return null
-    return d.toLocaleString('en-US', {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-      timeZone: 'America/Los_Angeles', timeZoneName: 'short',
-    })
-  } catch { return null }
-}
+import { ab, flagUrl, buildResolver, rawAbKey, fmtKickoffPT, fetchFifaKickoffMap } from '../utils'
 
 const ROUNDS = [
   { key: 'Round of 32', label: 'R32' },
@@ -92,17 +77,7 @@ export default function Bracket({ matches, groups, liveMatches = [] }) {
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const data = await fetch(FIFA_CAL_URL).then(r => r.json())
-        const map = {}
-        for (const r of data.Results || []) {
-          const hA = (r.Home?.Abbreviation || r.HomeTeam?.Abbreviation || '').toUpperCase()
-          const aA = (r.Away?.Abbreviation || r.AwayTeam?.Abbreviation || '').toUpperCase()
-          if (!hA || !aA || !r.Date) continue
-          map[rawAbKey(hA, aA)] = r.Date
-        }
-        setFifaTimeMap(map)
-      } catch {}
+      try { setFifaTimeMap(await fetchFifaKickoffMap()) } catch {}
     }
     load()
     const iv = setInterval(load, 5 * 60_000)

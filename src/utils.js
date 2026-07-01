@@ -139,3 +139,32 @@ export function buildResolver(rankedGroups, matches) {
 
   return resolve
 }
+
+// ── FIFA calendar kickoff times (used by both bracket views) ────
+export const FIFA_CAL_URL = 'https://api.fifa.com/api/v3/calendar/matches?idCompetition=17&idSeason=285023&language=en&count=500'
+export const rawAbKey = (a, b) => [a.toUpperCase(), b.toUpperCase()].sort().join('|')
+
+export async function fetchFifaKickoffMap() {
+  const map = {}
+  const data = await fetch(FIFA_CAL_URL).then(r => r.json())
+  for (const r of data.Results || []) {
+    const hA = (r.Home?.Abbreviation || r.HomeTeam?.Abbreviation || '').toUpperCase()
+    const aA = (r.Away?.Abbreviation || r.AwayTeam?.Abbreviation || '').toUpperCase()
+    if (!hA || !aA || !r.Date) continue
+    map[rawAbKey(hA, aA)] = r.Date
+  }
+  return map
+}
+
+export function fmtKickoffPT(iso, opts = {}) {
+  if (!iso) return null
+  try {
+    const d = new Date(iso)
+    if (isNaN(d)) return null
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+      timeZone: 'America/Los_Angeles', timeZoneName: 'short',
+      ...opts,
+    })
+  } catch { return null }
+}

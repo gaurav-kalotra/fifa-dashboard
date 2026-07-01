@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
-import { ab, flagUrl, buildResolver, teamStatus } from '../utils'
+import { ab, flagUrl, buildResolver, teamStatus, rawAbKey, fmtKickoffPT, fetchFifaKickoffMap } from '../utils'
 
 // ── Bracket structure for WC2026 ──────────────────────────────
 // Left half → SF M101 → Final M104
@@ -115,7 +115,7 @@ function fmtDate(dateStr) {
 }
 
 // ── Individual bracket match card ─────────────────────────────
-function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isGreenSpot = false, isRedSpot = false, isElimSpot = false, greenSpotRow = 0, redSpotRow = 0, elimSpotRow = 0 }) {
+function BkCard({ num, byNum, resolve, fifaTimeMap, isToday = false, isPotential = false, isGreenSpot = false, isRedSpot = false, isElimSpot = false, greenSpotRow = 0, redSpotRow = 0, elimSpotRow = 0 }) {
   const m = byNum[num]
   if (!m) {
     let cls = 'bk-slot empty'
@@ -137,6 +137,8 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isG
   const win1 = played && (pen ? pen[0] > pen[1] : (s1 ?? 0) > (s2 ?? 0))
   const win2 = played && (pen ? pen[1] > pen[0] : (s2 ?? 0) > (s1 ?? 0))
   const dateStr = fmtDate(m.date)
+  const a1 = t1 ? ab(t1) : null, a2 = t2 ? ab(t2) : null
+  const kickoff = a1 && a2 ? fmtKickoffPT(fifaTimeMap?.[rawAbKey(a1, a2)]) : null
 
   let cls = 'bk-slot'
   if (played) cls += ' played'
@@ -155,7 +157,7 @@ function BkCard({ num, byNum, resolve, isToday = false, isPotential = false, isG
     <div className={cls}>
       <div className="bk-snum-row">
         <span className="bk-snum">M{num}{pen ? <span className="bk-snum-pen"> PEN</span> : et ? <span className="bk-snum-pen"> AET</span> : ''}</span>
-        {dateStr && <span className="bk-date">{dateStr}</span>}
+        {(kickoff || dateStr) && <span className="bk-date">{kickoff || dateStr}</span>}
       </div>
       <div className={`bk-row${win1 ? ' win' : loser1 ? ' bk-loser' : !played && t1 ? ' bk-pre' : ''}${jitter1 ? ' bk-jitter-row' : ''}`}>
         <Flag name={t1} cls="bk-flag" />
@@ -182,13 +184,13 @@ const BRACKET_NEXT = {
 }
 
 // ── One side of the bracket (left or right) ───────────────────
-function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums, greenSlots, redSlots, elimSlots }) {
+function BracketHalf({ half, byNum, resolve, side, todayNums, potentialNums, greenSlots, redSlots, elimSlots, fifaTimeMap }) {
   const r32Pairs = [[half.r32[0], half.r32[1]], [half.r32[2], half.r32[3]],
                     [half.r32[4], half.r32[5]], [half.r32[6], half.r32[7]]]
   const r16Pairs = [[half.r16[0], half.r16[1]], [half.r16[2], half.r16[3]]]
 
   const card = num => (
-    <BkCard num={num} byNum={byNum} resolve={resolve}
+    <BkCard num={num} byNum={byNum} resolve={resolve} fifaTimeMap={fifaTimeMap}
       isToday={todayNums.has(num)} isPotential={potentialNums.has(num)}
       isGreenSpot={greenSlots.has(num)} isRedSpot={redSlots.has(num)} isElimSpot={elimSlots.has(num)}
       greenSpotRow={greenSlots.get(num) || 0}
@@ -294,6 +296,16 @@ const PHASE_MS = 6000 // 2 slow pulses × 3s each before switching
 
 // ── Main export ───────────────────────────────────────────────
 export default function Schedule({ groups, matches }) {
+  const [fifaTimeMap, setFifaTimeMap] = useState({})
+  useEffect(() => {
+    const load = async () => {
+      try { setFifaTimeMap(await fetchFifaKickoffMap()) } catch {}
+    }
+    load()
+    const iv = setInterval(load, 5 * 60_000)
+    return () => clearInterval(iv)
+  }, [])
+
   const byNum = useMemo(() => {
     const m = {}
     for (const match of matches) if (match.num) m[match.num] = match
@@ -414,11 +426,11 @@ export default function Schedule({ groups, matches }) {
         <div className="sch-bracket-body">
           <BracketHalf half={LEFT} byNum={byNum} resolve={resolve} side="left"
             todayNums={todayNums} potentialNums={potentialNums}
-            greenSlots={gs} redSlots={rs} elimSlots={es} />
+            greenSlots={gs} redSlots={rs} elimSlots={es} fifaTimeMap={fifaTimeMap} />
           <FinalCard byNum={byNum} resolve={resolve} />
           <BracketHalf half={RIGHT} byNum={byNum} resolve={resolve} side="right"
             todayNums={todayNums} potentialNums={potentialNums}
-            greenSlots={gs} redSlots={rs} elimSlots={es} />
+            greenSlots={gs} redSlots={rs} elimSlots={es} fifaTimeMap={fifaTimeMap} />
         </div>
       </div>
 
